@@ -1,0 +1,161 @@
+id,name,category,calories,protein,carbs,fat,fiber,serving,unit
+1,Boiled Egg,Protein,78,6,0.5,5,0,1,pc
+2,Egg White,Protein,17,4,0,0,0,1,pc
+3,Egg Omelette (2 eggs),Protein,180,12,1,14,0,1,serving
+4,Scrambled Eggs,Protein,200,14,2,15,0,2,eggs
+5,Chicken Breast (grilled),Protein,165,31,0,4,0,100,g
+6,Chicken Curry,Protein,240,25,6,12,1,150,g
+7,Tandoori Chicken,Protein,195,28,4,7,0,4,pcs
+8,Chicken Tikka,Protein,180,26,3,7,0,6,pcs
+9,Fish Curry,Protein,200,22,5,10,0,150,g
+10,Grilled Fish,Protein,150,26,0,5,0,120,g
+11,Prawns Curry,Protein,180,20,4,9,0,150,g
+12,Paneer (raw),Protein,265,18,4,20,0,100,g
+13,Paneer Bhurji,Protein,280,16,6,22,1,100,g
+14,Paneer Tikka,Protein,250,15,8,18,1,6,pcs
+15,Palak Paneer,Protein,220,12,8,16,2,150,g
+16,Tofu,Protein,76,8,2,4,0,100,g
+17,Soya Chunks (cooked),Protein,170,24,12,2,4,50,g
+18,Moong Dal,Protein,105,7,18,0.5,3,1,katori
+19,Toor Dal,Protein,120,8,20,1,4,1,katori
+20,Masoor Dal,Protein,115,9,19,0.5,4,1,katori
+21,Chana Dal,Protein,130,9,22,2,5,1,katori
+22,Urad Dal,Protein,125,8,21,1,4,1,katori
+23,Rajma (cooked),Protein,140,9,24,1,6,1,katori
+24,Chole (cooked),Protein,150,8,26,3,7,1,katori
+25,Black Chana,Protein,160,10,28,2,8,1,katori
+26,Sprouts (mixed),Protein,80,7,14,1,4,1,katori
+27,Milk (full fat),Dairy,120,6,9,7,0,200,ml
+28,Milk (toned),Dairy,90,6,9,3,0,200,ml
+29,Milk (skimmed),Dairy,66,6,10,0.5,0,200,ml
+30,Curd (dahi),Dairy,100,4,8,6,0,100,g
+31,Greek Yogurt,Dairy,130,12,5,6,0,150,g
+32,Buttermilk,Dairy,40,3,5,1,0,200,ml
+33,Lassi (sweet),Dairy,180,5,28,5,0,250,ml
+34,Lassi (salted),Dairy,90,5,8,4,0,250,ml
+35,Paneer (cottage cheese),Dairy,265,18,4,20,0,100,g
+36,Cheese Slice,Dairy,80,4,1,7,0,1,slice
+37,Ghee,Dairy,45,0,0,5,0,1,tsp
+38,Butter,Dairy,36,0,0,4,0,1,tsp
+39,Rice (cooked),Grains,130,3,28,0.5,0.5,100,g
+40,Chapati,Grains,104,3,18,3,2,1,pc
+41,Paratha (plain),Grains,180,4,25,7,2,1,pc
+42,Aloo Paratha,Grains,220,5,32,8,3,1,pc
+43,Naan,Grains,260,8,45,5,2,1,pc
+44,Tandoori Roti,Grains,90,3,18,1,2,1,pc
+45,Puri,Grains,100,2,12,5,1,1,pc
+46,Bhatura,Grains,200,4,25,10,1,1,pc
+47,Dosa (plain),Grains,135,4,24,3,1,1,pc
+48,Masala Dosa,Grains,250,6,40,8,3,1,pc
+49,Idli,Grains,60,2,12,0.5,0.5,1,pc
+50,Upma,Grains,180,5,28,5,2,1,katori
+51,Poha,Grains,160,3,30,3,1,1,katori
+52,Vermicelli (sevai),Grains,150,4,28,2,1,1,katori
+53,Bread (white),Grains,80,3,15,1,0.5,1,slice
+54,Bread (brown),Grains,70,3,12,1,2,1,slice
+55,Oats (cooked),Grains,150,5,27,3,4,1,katori
+56,Muesli,Grains,200,6,35,5,4,50,g
+57,Cornflakes,Grains,150,3,33,0.5,1,30,g
+58,Daliya (porridge),Grains,140,5,28,1,4,1,katori
+59,Biryani (chicken),Grains,350,18,40,14,2,1,plate
+60,Biryani (veg),Grains,280,8,42,9,3,1,plate
+61,Khichdi,Grains,200,7,35,4,3,1,katori
+62,Aloo Sabzi (dry),Vegetables,120,2,18,5,2,1,katori
+63,Aloo Gobi,Vegetables,110,3,15,5,3,1,katori
+64,Bhindi (okra),Vegetables,80,2,10,4,3,1,katori
+65,Baingan Bharta,Vegetables,100,2,12,5,4,1,katori
+66,Palak (spinach),Vegetables,70,4,6,4,3,1,katori
+67,Methi (fenugreek),Vegetables,75,4,7,4,3,1,katori
+68,Lauki (bottle gourd),Vegetables,50,1,8,2,2,1,katori
+69,Tinda,Vegetables,55,1,9,2,2,1,katori
+70,Karela (bitter gourd),Vegetables,60,2,8,3,3,1,katori
+71,Cabbage Sabzi,Vegetables,70,2,10,3,3,1,katori
+72,Mixed Veg Curry,Vegetables,100,3,12,5,3,1,katori
+73,Salad (green),Vegetables,30,1,6,0,2,1,katori
+74,Raita (cucumber),Vegetables,60,3,6,3,1,100,g
+75,Sambar,Vegetables,90,4,14,2,3,1,katori
+76,Rasam,Vegetables,40,1,8,0.5,1,1,katori
+77,Chutney (coconut),Vegetables,50,1,4,4,1,2,tbsp
+78,Chutney (mint),Vegetables,15,0,3,0,0,2,tbsp
+79,Pickle,Vegetables,30,0,2,2,0,1,tbsp
+80,Almonds,Nuts,70,3,2,6,1,10,pcs
+81,Cashews,Nuts,90,3,5,7,0.5,10,pcs
+82,Walnuts,Nuts,100,2,2,10,1,5,pcs
+83,Peanuts,Nuts,140,6,5,12,2,25,g
+84,Pistachios,Nuts,80,3,4,6,1,15,pcs
+85,Raisins,Nuts,45,0.5,12,0,1,15,pcs
+86,Dates,Nuts,70,0.5,18,0,2,2,pcs
+87,Pumpkin Seeds,Nuts,90,4,2,8,1,1,tbsp
+88,Flax Seeds,Nuts,55,2,3,4,3,1,tbsp
+89,Chia Seeds,Nuts,60,2,5,4,5,1,tbsp
+90,Sunflower Seeds,Nuts,80,3,3,7,1,1,tbsp
+91,Banana,Fruits,105,1,27,0,3,1,medium
+92,Apple,Fruits,80,0,21,0,4,1,medium
+93,Orange,Fruits,60,1,15,0,3,1,medium
+94,Mango,Fruits,100,1,25,0,2,1,katori
+95,Papaya,Fruits,60,1,15,0,2,1,katori
+96,Watermelon,Fruits,50,1,12,0,1,1,katori
+97,Grapes,Fruits,70,1,18,0,1,1,katori
+98,Pomegranate,Fruits,80,1,19,0,4,0.5,pc
+99,Guava,Fruits,70,3,14,1,5,1,medium
+100,Chikoo (sapota),Fruits,80,1,20,0,3,1,medium
+101,Protein Powder (whey),Supplements,130,24,3,2,0,1,scoop
+102,Protein Bar,Supplements,200,20,22,6,3,1,bar
+103,Mass Gainer,Supplements,350,15,60,5,2,1,scoop
+104,BCAA,Supplements,10,2,0,0,0,1,scoop
+105,Creatine,Supplements,0,0,0,0,0,1,scoop
+106,Tea (without sugar),Beverages,5,0,1,0,0,1,cup
+107,Tea (with sugar),Beverages,35,0,8,0,0,1,cup
+108,Coffee (black),Beverages,5,0,1,0,0,1,cup
+109,Coffee (with milk),Beverages,60,2,6,3,0,1,cup
+110,Coconut Water,Beverages,45,2,9,0,2,200,ml
+111,Fresh Lime Water,Beverages,10,0,3,0,0,1,glass
+112,Mango Shake,Beverages,200,4,35,5,1,250,ml
+113,Banana Shake,Beverages,180,5,30,4,2,250,ml
+114,Samosa,Snacks,260,4,30,14,2,1,pc
+115,Pakora,Snacks,180,4,18,10,2,5,pcs
+116,Vada Pav,Snacks,290,6,40,12,3,1,pc
+117,Pav Bhaji,Snacks,400,10,55,16,5,1,plate
+118,Bhel Puri,Snacks,200,5,35,6,3,1,plate
+119,Sev Puri,Snacks,180,4,28,6,2,6,pcs
+120,Pani Puri,Snacks,150,3,25,4,2,6,pcs
+121,Dhokla,Snacks,120,4,20,3,1,4,pcs
+122,Khandvi,Snacks,100,4,15,3,1,6,pcs
+123,Khakhra,Snacks,120,4,20,3,2,2,pcs
+124,Mathri,Snacks,150,3,18,8,1,4,pcs
+125,Namkeen Mix,Snacks,160,4,18,8,2,30,g
+126,Roasted Chana,Snacks,120,7,20,2,5,30,g
+127,Murmura (puffed rice),Snacks,110,2,25,0,1,1,katori
+128,Gulab Jamun,Desserts,150,2,22,6,0,1,pc
+129,Rasgulla,Desserts,120,3,24,2,0,1,pc
+130,Kheer,Desserts,200,5,32,6,0,1,katori
+131,Halwa (suji),Desserts,250,4,35,12,1,100,g
+132,Jalebi,Desserts,150,1,30,4,0,2,pcs
+133,Barfi,Desserts,180,4,24,8,0,2,pcs
+134,Ladoo,Desserts,200,4,28,9,1,1,pc
+135,Ice Cream,Desserts,200,4,24,10,0,1,scoop
+136,Sandwich (veg),FastFood,250,8,35,9,3,1,pc
+137,Burger (veg),FastFood,350,10,45,14,3,1,pc
+138,Pizza (1 slice),FastFood,280,12,32,12,2,1,slice
+139,French Fries,FastFood,320,4,40,16,4,medium,serving
+140,Pasta (red sauce),FastFood,350,10,55,10,4,1,plate
+141,Noodles (veg),FastFood,300,8,45,10,3,1,plate
+142,Fried Rice,FastFood,350,8,50,12,2,1,plate
+143,Momos (steamed),FastFood,200,8,30,5,2,6,pcs
+144,Momos (fried),FastFood,280,8,30,14,2,6,pcs
+145,Spring Roll,FastFood,180,4,22,9,2,2,pcs
+146,Manchurian (dry),FastFood,250,6,30,12,3,1,plate
+147,Chow Mein,FastFood,320,8,45,12,3,1,plate
+148,Egg Curry,Protein,200,14,6,14,1,2,eggs
+149,Keema,Protein,250,20,4,18,1,100,g
+150,Mutton Curry,Protein,280,22,5,20,1,150,g
+151,Butter Chicken,Protein,300,25,8,20,1,150,g
+152,Dal Makhani,Protein,180,9,22,7,5,1,katori
+153,Dal Fry,Protein,140,8,20,4,4,1,katori
+154,Egg Bhurji,Protein,190,14,3,14,0,2,eggs
+155,Fish Fry,Protein,220,24,8,10,0,1,pc
+156,Nut Milk Mix,Breakfast,335,18,25,18,3,1,serving
+157,Poha with Peanuts,Breakfast,200,5,32,6,2,1,katori
+158,Upma with Vegetables,Breakfast,200,6,30,6,3,1,katori
+159,Paratha with Curd,Breakfast,280,7,32,14,3,1,serving
+160,Idli Sambar,Breakfast,180,6,32,3,3,3,pcs
