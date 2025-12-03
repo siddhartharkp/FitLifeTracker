@@ -298,33 +298,71 @@
     <!-- Food Search Modal -->
     <div id="foodModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <div class="bg-white rounded-3xl w-full max-w-lg max-h-[85vh] shadow-2xl flex flex-col">
-            <div class="p-6 border-b border-slate-100">
-                <div class="flex items-center justify-between mb-4">
+            <!-- Header with Tabs -->
+            <div class="p-4 border-b border-slate-100">
+                <div class="flex items-center justify-between mb-3">
                     <h3 class="font-display text-xl font-semibold text-slate-800">🍽️ Add Food</h3>
                     <button onclick="closeFoodModal()" class="p-2 hover:bg-slate-100 rounded-lg">
                         <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 </div>
-                <div class="relative">
-                    <input type="text" id="foodSearch" placeholder="Search foods... (e.g., chapati, chicken, dal)"
-                           class="w-full px-4 py-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                           oninput="searchFoods(this.value)">
-                    <svg class="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                </div>
-                <div class="flex gap-2 mt-3 flex-wrap">
-                    <button onclick="filterByCategory('all')" class="category-btn px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">All</button>
-                    <button onclick="filterByCategory('Protein')" class="category-btn px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">🥩 Protein</button>
-                    <button onclick="filterByCategory('Grains')" class="category-btn px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">🍚 Grains</button>
-                    <button onclick="filterByCategory('Vegetables')" class="category-btn px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">🥬 Veggies</button>
-                    <button onclick="filterByCategory('Dairy')" class="category-btn px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">🥛 Dairy</button>
-                    <button onclick="filterByCategory('Fruits')" class="category-btn px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">🍎 Fruits</button>
+                <!-- Modal Tabs -->
+                <div class="flex gap-2">
+                    <button onclick="switchFoodModalTab('search')" class="food-modal-tab flex-1 py-2 rounded-xl text-sm font-semibold transition-all bg-blue-500 text-white" data-tab="search">
+                        🔍 Search Foods
+                    </button>
+                    <button onclick="switchFoodModalTab('combos')" class="food-modal-tab flex-1 py-2 rounded-xl text-sm font-semibold transition-all bg-slate-100 text-slate-600" data-tab="combos">
+                        ⚡ Quick Combos
+                    </button>
                 </div>
             </div>
 
-            <div class="flex-1 overflow-y-auto p-4" id="foodSearchResults">
-                <div class="text-center text-slate-400 py-8">
-                    <div class="loading-spinner mx-auto mb-3"></div>
-                    Loading foods...
+            <!-- Search Tab Content -->
+            <div id="searchTabContent" class="flex-1 flex flex-col overflow-hidden">
+                <div class="px-4 pt-3 pb-2">
+                    <div class="relative">
+                        <input type="text" id="foodSearch" placeholder="Search foods... (e.g., chapati, chicken, dal)"
+                               class="w-full px-4 py-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               oninput="searchFoods(this.value)">
+                        <svg class="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                    <div class="flex gap-2 mt-2 flex-wrap">
+                        <button onclick="filterByCategory('all')" class="category-btn px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">All</button>
+                        <button onclick="filterByCategory('Protein')" class="category-btn px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">🥩 Protein</button>
+                        <button onclick="filterByCategory('Grains')" class="category-btn px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">🍚 Grains</button>
+                        <button onclick="filterByCategory('Vegetables')" class="category-btn px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">🥬 Veggies</button>
+                        <button onclick="filterByCategory('Dairy')" class="category-btn px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">🥛 Dairy</button>
+                        <button onclick="filterByCategory('Fruits')" class="category-btn px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">🍎 Fruits</button>
+                    </div>
+                </div>
+                <div class="flex-1 overflow-y-auto p-4" id="foodSearchResults">
+                    <div class="text-center text-slate-400 py-8">
+                        <div class="loading-spinner mx-auto mb-3"></div>
+                        Loading foods...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Combos Tab Content -->
+            <div id="combosTabContent" class="flex-1 flex flex-col overflow-hidden hidden">
+                <div class="px-4 pt-3 pb-2 border-b border-slate-100">
+                    <!-- Category Tabs -->
+                    <div class="flex gap-1 overflow-x-auto pb-1" id="comboTabs">
+                        <button onclick="filterCombos('all')" class="combo-tab px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-500 text-white" data-category="all">All</button>
+                        <button onclick="filterCombos('breakfast')" class="combo-tab px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-600" data-category="breakfast">🌅 Breakfast</button>
+                        <button onclick="filterCombos('lunch')" class="combo-tab px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-600" data-category="lunch">🍛 Lunch</button>
+                        <button onclick="filterCombos('dinner')" class="combo-tab px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-600" data-category="dinner">🌙 Dinner</button>
+                        <button onclick="filterCombos('snacks')" class="combo-tab px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-600" data-category="snacks">🍿 Snacks</button>
+                        <button onclick="filterCombos('cheat')" class="combo-tab px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-600" data-category="cheat">🍕 Cheat</button>
+                    </div>
+                    <!-- Create Combo Button -->
+                    <button onclick="openCreateComboModal()" class="w-full mt-2 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold text-sm hover:from-emerald-600 hover:to-teal-600 transition-all shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        Create New Combo
+                    </button>
+                </div>
+                <div class="flex-1 overflow-y-auto p-4" id="quickCombos">
+                    <!-- Populated dynamically -->
                 </div>
             </div>
 
@@ -431,6 +469,131 @@
         </div>
     </div>
 
+    <!-- Create Combo Modal -->
+    <div id="createComboModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl w-full max-w-lg max-h-[90vh] shadow-2xl flex flex-col">
+            <!-- Header -->
+            <div class="p-4 border-b border-slate-100">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-display text-xl font-semibold text-slate-800">Create New Combo</h3>
+                    <button onclick="closeCreateComboModal()" class="p-2 hover:bg-slate-100 rounded-lg">
+                        <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                <!-- Combo Name & Emoji -->
+                <div class="flex gap-3">
+                    <div class="flex-1">
+                        <label class="block text-sm text-slate-500 mb-1">Combo Name *</label>
+                        <input type="text" id="comboName" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="e.g., Power Breakfast">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-500 mb-1">Emoji</label>
+                        <div class="relative">
+                            <button onclick="toggleEmojiPicker()" id="selectedEmoji" class="w-12 h-10 bg-slate-50 border border-slate-200 rounded-lg text-xl hover:bg-slate-100 transition-all">🍽️</button>
+                            <div id="emojiPicker" class="hidden absolute top-12 right-0 bg-white border border-slate-200 rounded-xl shadow-xl p-2 grid grid-cols-6 gap-1 z-10">
+                                <button onclick="selectComboEmoji('🍽️')" class="p-1.5 hover:bg-slate-100 rounded text-lg">🍽️</button>
+                                <button onclick="selectComboEmoji('🥗')" class="p-1.5 hover:bg-slate-100 rounded text-lg">🥗</button>
+                                <button onclick="selectComboEmoji('🍛')" class="p-1.5 hover:bg-slate-100 rounded text-lg">🍛</button>
+                                <button onclick="selectComboEmoji('🥣')" class="p-1.5 hover:bg-slate-100 rounded text-lg">🥣</button>
+                                <button onclick="selectComboEmoji('🍳')" class="p-1.5 hover:bg-slate-100 rounded text-lg">🍳</button>
+                                <button onclick="selectComboEmoji('🥪')" class="p-1.5 hover:bg-slate-100 rounded text-lg">🥪</button>
+                                <button onclick="selectComboEmoji('🍗')" class="p-1.5 hover:bg-slate-100 rounded text-lg">🍗</button>
+                                <button onclick="selectComboEmoji('🥩')" class="p-1.5 hover:bg-slate-100 rounded text-lg">🥩</button>
+                                <button onclick="selectComboEmoji('🍕')" class="p-1.5 hover:bg-slate-100 rounded text-lg">🍕</button>
+                                <button onclick="selectComboEmoji('🍔')" class="p-1.5 hover:bg-slate-100 rounded text-lg">🍔</button>
+                                <button onclick="selectComboEmoji('🥛')" class="p-1.5 hover:bg-slate-100 rounded text-lg">🥛</button>
+                                <button onclick="selectComboEmoji('🥤')" class="p-1.5 hover:bg-slate-100 rounded text-lg">🥤</button>
+                                <button onclick="selectComboEmoji('🧀')" class="p-1.5 hover:bg-slate-100 rounded text-lg">🧀</button>
+                                <button onclick="selectComboEmoji('🥚')" class="p-1.5 hover:bg-slate-100 rounded text-lg">🥚</button>
+                                <button onclick="selectComboEmoji('🍞')" class="p-1.5 hover:bg-slate-100 rounded text-lg">🍞</button>
+                                <button onclick="selectComboEmoji('🥙')" class="p-1.5 hover:bg-slate-100 rounded text-lg">🥙</button>
+                                <button onclick="selectComboEmoji('🌮')" class="p-1.5 hover:bg-slate-100 rounded text-lg">🌮</button>
+                                <button onclick="selectComboEmoji('🍜')" class="p-1.5 hover:bg-slate-100 rounded text-lg">🍜</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category & Tag -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm text-slate-500 mb-1">Category *</label>
+                        <select id="comboCategory" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="breakfast">🌅 Breakfast</option>
+                            <option value="lunch">🍛 Lunch</option>
+                            <option value="dinner">🌙 Dinner</option>
+                            <option value="snacks">🍿 Snacks</option>
+                            <option value="cheat">🍕 Cheat</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-500 mb-1">Tag (optional)</label>
+                        <select id="comboTag" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="">None</option>
+                            <option value="Default">Default</option>
+                            <option value="High">High Protein</option>
+                            <option value="Highest">Highest Protein</option>
+                            <option value="Light">Light</option>
+                            <option value="Max Protein">Max Protein</option>
+                            <option value="Veg">Veg</option>
+                            <option value="Cheat">Cheat</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Add Foods Section -->
+                <div class="border border-slate-200 rounded-xl overflow-hidden">
+                    <div class="bg-slate-50 px-3 py-2 border-b border-slate-200">
+                        <div class="relative">
+                            <input type="text" id="comboFoodSearch" placeholder="Search foods to add..."
+                                   class="w-full px-3 py-2 pl-9 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                                   oninput="searchFoodsForCombo(this.value)">
+                            <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                    </div>
+                    <div id="comboFoodResults" class="max-h-32 overflow-y-auto">
+                        <div class="text-center text-slate-400 py-4 text-sm">Search for foods to add</div>
+                    </div>
+                </div>
+
+                <!-- Added Foods List -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-medium text-slate-700">Foods in Combo</label>
+                        <span id="comboItemCount" class="text-xs text-slate-400">0 items</span>
+                    </div>
+                    <div id="comboFoodsList" class="space-y-2 min-h-[60px] max-h-40 overflow-y-auto">
+                        <div class="text-center text-slate-400 py-4 text-sm border-2 border-dashed border-slate-200 rounded-xl">
+                            Add foods using search above
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Totals Preview -->
+                <div class="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-3 border border-emerald-200">
+                    <div class="text-sm font-medium text-emerald-800 mb-2">Combo Totals</div>
+                    <div class="grid grid-cols-5 gap-2 text-center text-xs">
+                        <div><div class="font-bold text-rose-500" id="comboTotalCal">0</div><div class="text-slate-400">kcal</div></div>
+                        <div><div class="font-bold text-amber-600" id="comboTotalProtein">0g</div><div class="text-slate-400">protein</div></div>
+                        <div><div class="font-bold text-blue-600" id="comboTotalCarbs">0g</div><div class="text-slate-400">carbs</div></div>
+                        <div><div class="font-bold text-pink-500" id="comboTotalFat">0g</div><div class="text-slate-400">fat</div></div>
+                        <div><div class="font-bold text-emerald-600" id="comboTotalFiber">0g</div><div class="text-slate-400">fiber</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="p-4 border-t border-slate-100 flex gap-3">
+                <button onclick="closeCreateComboModal()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-semibold transition-all">Cancel</button>
+                <button onclick="saveNewCombo()" class="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-emerald-500/30 hover:from-emerald-600 hover:to-teal-600">Save Combo</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Weight Modal -->
     <div id="weightModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
@@ -449,6 +612,24 @@
             <div class="flex gap-3">
                 <button onclick="closeWeightModal()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-semibold transition-all">Cancel</button>
                 <button onclick="saveWeight()" class="flex-1 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold transition-all shadow-lg">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PR Log Modal -->
+    <div id="prModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
+            <h3 class="font-display text-xl font-semibold text-slate-800 mb-2">🏆 Log Your PR</h3>
+            <p class="text-slate-500 text-sm mb-4" id="prExerciseName">Push-ups</p>
+            <div class="mb-4">
+                <label class="block text-sm text-slate-500 mb-2" id="prLabel">Time (seconds)</label>
+                <input type="number" id="prInput" step="1" min="1"
+                       class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-lg font-semibold text-center focus:outline-none focus:ring-2 focus:ring-orange-500"
+                       placeholder="300">
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closePrModal()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-semibold transition-all">Cancel</button>
+                <button onclick="savePr()" class="flex-1 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-orange-500/30">Save PR</button>
             </div>
         </div>
     </div>
@@ -498,8 +679,12 @@
 
     <script>
         // ==================== CONFIGURATION ====================
-        // IMPORTANT: Replace this URL with your deployed Google Apps Script URL
-        const API_URL = 'https://script.google.com/macros/s/AKfycbz4uRfNhIKBDWCjBMob_HClMFrwgtJtBEW9NR1NsB_5FYr-MTTCxOt76vNtWVNXQib7/exec';
+        // MySQL Backend API URL (Bluehost) - Much faster than Google Apps Script!
+        // Update this to your Bluehost domain after deployment
+        const API_URL = 'https://codesoft.co.in/fitlife/api.php';
+
+        // Fallback to Google Apps Script if needed (slower)
+        // const API_URL = 'https://script.google.com/macros/s/AKfycbyNbnx3PaUbh8xWoXTdQOXTTCBORFaYFDeXXl3geMrbsIliP21NowS1L_WsQoaOQEgF/exec';
 
         // ==================== STATE ====================
         let selectedDate = new Date().toISOString().split('T')[0];
@@ -539,11 +724,307 @@
             { text: '"The pain you feel today will be the strength you feel tomorrow."', author: '— Unknown' },
             { text: '"You don\'t have to be great to start, but you have to start to be great."', author: '— Zig Ziglar' }
         ];
-        let goals = { calories: 1300, protein: 80, carbs: 180, fat: 45, fiber: 25, targetWeight: 65 };
+
+        // Saved Meal Combos (Quick Add) - with categories and tags
+        const defaultMealCombos = [
+            // ==================== BREAKFAST ====================
+            {
+                id: 1, name: 'Nut Milk + 2 Eggs', emoji: '🥛', category: 'breakfast', tag: 'Default',
+                items: [
+                    { foodName: 'Milk (full fat)', quantity: 1, unit: '200ml', calories: 120, protein: 6, carbs: 10, fat: 6, fiber: 0 },
+                    { foodName: 'Walnuts', quantity: 2, unit: 'pcs', calories: 52, protein: 1, carbs: 1, fat: 5, fiber: 0.5 },
+                    { foodName: 'Almonds', quantity: 5, unit: 'pcs', calories: 35, protein: 1.5, carbs: 1, fat: 3, fiber: 0.5 },
+                    { foodName: 'Dates', quantity: 1, unit: 'pc', calories: 20, protein: 0, carbs: 5, fat: 0, fiber: 0.5 },
+                    { foodName: 'Raisins', quantity: 5, unit: 'pcs', calories: 15, protein: 0, carbs: 4, fat: 0, fiber: 0.3 },
+                    { foodName: 'Pistachios', quantity: 5, unit: 'pcs', calories: 14, protein: 0.5, carbs: 0.5, fat: 1, fiber: 0.2 },
+                    { foodName: 'Pumpkin Seeds', quantity: 1, unit: 'tbsp', calories: 45, protein: 2, carbs: 1, fat: 4, fiber: 0.5 },
+                    { foodName: 'Whole Eggs', quantity: 2, unit: 'pcs', calories: 140, protein: 12, carbs: 1, fat: 10, fiber: 0 }
+                ],
+                totalCalories: 441, totalProtein: 23
+            },
+            {
+                id: 2, name: 'Poha + Peanuts + Curd', emoji: '🍚', category: 'breakfast', tag: null,
+                items: [
+                    { foodName: 'Poha', quantity: 1, unit: 'katori', calories: 180, protein: 4, carbs: 35, fat: 3, fiber: 1 },
+                    { foodName: 'Peanuts', quantity: 20, unit: 'g', calories: 110, protein: 5, carbs: 4, fat: 9, fiber: 1.5 },
+                    { foodName: 'Curd', quantity: 100, unit: 'g', calories: 50, protein: 3, carbs: 4, fat: 3, fiber: 0 }
+                ],
+                totalCalories: 340, totalProtein: 12
+            },
+            {
+                id: 3, name: 'Idli (3) + Sambar + Chutney', emoji: '🫓', category: 'breakfast', tag: null,
+                items: [
+                    { foodName: 'Idli', quantity: 3, unit: 'pcs', calories: 180, protein: 6, carbs: 36, fat: 1.5, fiber: 1.5 },
+                    { foodName: 'Sambar', quantity: 1, unit: 'katori', calories: 100, protein: 3, carbs: 12, fat: 3, fiber: 3 },
+                    { foodName: 'Coconut Chutney', quantity: 2, unit: 'tbsp', calories: 40, protein: 1, carbs: 2, fat: 3, fiber: 0.5 }
+                ],
+                totalCalories: 320, totalProtein: 10
+            },
+            {
+                id: 4, name: 'Masala Dosa + Sambar', emoji: '🥞', category: 'breakfast', tag: null,
+                items: [
+                    { foodName: 'Masala Dosa', quantity: 1, unit: 'pc', calories: 280, protein: 7, carbs: 40, fat: 10, fiber: 2 },
+                    { foodName: 'Sambar', quantity: 1, unit: 'katori', calories: 100, protein: 3, carbs: 12, fat: 3, fiber: 3 }
+                ],
+                totalCalories: 380, totalProtein: 10
+            },
+            {
+                id: 5, name: 'Veg Cheese Toast', emoji: '🧀', category: 'breakfast', tag: null,
+                items: [
+                    { foodName: 'Bread (whole wheat)', quantity: 2, unit: 'slices', calories: 160, protein: 6, carbs: 28, fat: 2, fiber: 4 },
+                    { foodName: 'Cheese', quantity: 30, unit: 'g', calories: 120, protein: 7, carbs: 1, fat: 10, fiber: 0 },
+                    { foodName: 'Mixed Vegetables', quantity: 50, unit: 'g', calories: 20, protein: 1, carbs: 4, fat: 0, fiber: 1 },
+                    { foodName: 'Butter', quantity: 1, unit: 'tsp', calories: 100, protein: 0, carbs: 0, fat: 11, fiber: 0 }
+                ],
+                totalCalories: 400, totalProtein: 14
+            },
+            {
+                id: 6, name: 'Aloo Paratha + Curd', emoji: '🫓', category: 'breakfast', tag: null,
+                items: [
+                    { foodName: 'Aloo Paratha', quantity: 1, unit: 'pc', calories: 280, protein: 6, carbs: 40, fat: 12, fiber: 3 },
+                    { foodName: 'Curd', quantity: 100, unit: 'g', calories: 100, protein: 4, carbs: 8, fat: 6, fiber: 0 }
+                ],
+                totalCalories: 380, totalProtein: 10
+            },
+
+            // ==================== LUNCH ====================
+            {
+                id: 7, name: 'Rice + Moong Dal + Chole + Curd', emoji: '🍛', category: 'lunch', tag: 'High',
+                items: [
+                    { foodName: 'Rice (cooked)', quantity: 75, unit: 'g', calories: 90, protein: 2, carbs: 20, fat: 0.5, fiber: 0.5 },
+                    { foodName: 'Moong Dal', quantity: 1, unit: 'katori', calories: 120, protein: 8, carbs: 18, fat: 0.5, fiber: 3 },
+                    { foodName: 'Chole', quantity: 1, unit: 'katori', calories: 150, protein: 9, carbs: 26, fat: 3, fiber: 7 },
+                    { foodName: 'Curd', quantity: 100, unit: 'g', calories: 60, protein: 3, carbs: 4, fat: 3, fiber: 0 },
+                    { foodName: 'Salad', quantity: 1, unit: 'serving', calories: 25, protein: 1, carbs: 5, fat: 0, fiber: 2 }
+                ],
+                totalCalories: 445, totalProtein: 23
+            },
+            {
+                id: 8, name: 'Rice + Chana Dal + Paneer Bhurji + Curd', emoji: '🧀', category: 'lunch', tag: 'Highest',
+                items: [
+                    { foodName: 'Rice (cooked)', quantity: 75, unit: 'g', calories: 90, protein: 2, carbs: 20, fat: 0.5, fiber: 0.5 },
+                    { foodName: 'Chana Dal', quantity: 1, unit: 'katori', calories: 120, protein: 8, carbs: 18, fat: 1, fiber: 4 },
+                    { foodName: 'Paneer Bhurji', quantity: 75, unit: 'g', calories: 200, protein: 14, carbs: 4, fat: 15, fiber: 0.5 },
+                    { foodName: 'Curd', quantity: 100, unit: 'g', calories: 60, protein: 3, carbs: 4, fat: 3, fiber: 0 },
+                    { foodName: 'Salad', quantity: 1, unit: 'serving', calories: 25, protein: 1, carbs: 5, fat: 0, fiber: 2 }
+                ],
+                totalCalories: 495, totalProtein: 28
+            },
+            {
+                id: 9, name: 'Rice + Toor Dal + Cabbage + Egg + Curd', emoji: '🥚', category: 'lunch', tag: null,
+                items: [
+                    { foodName: 'Rice (cooked)', quantity: 75, unit: 'g', calories: 90, protein: 2, carbs: 20, fat: 0.5, fiber: 0.5 },
+                    { foodName: 'Toor Dal', quantity: 1, unit: 'katori', calories: 120, protein: 8, carbs: 18, fat: 0.5, fiber: 3 },
+                    { foodName: 'Cabbage Sabzi', quantity: 1, unit: 'katori', calories: 60, protein: 2, carbs: 8, fat: 3, fiber: 2 },
+                    { foodName: 'Boiled Egg', quantity: 1, unit: 'pc', calories: 78, protein: 6, carbs: 0.5, fat: 5, fiber: 0 },
+                    { foodName: 'Curd', quantity: 100, unit: 'g', calories: 60, protein: 3, carbs: 4, fat: 3, fiber: 0 },
+                    { foodName: 'Salad', quantity: 1, unit: 'serving', calories: 25, protein: 1, carbs: 5, fat: 0, fiber: 2 }
+                ],
+                totalCalories: 433, totalProtein: 22
+            },
+            {
+                id: 10, name: 'Rice + Masoor Dal + Suran + Curd', emoji: '🍛', category: 'lunch', tag: 'Light',
+                items: [
+                    { foodName: 'Rice (cooked)', quantity: 75, unit: 'g', calories: 90, protein: 2, carbs: 20, fat: 0.5, fiber: 0.5 },
+                    { foodName: 'Masoor Dal', quantity: 1, unit: 'katori', calories: 120, protein: 8, carbs: 18, fat: 0.5, fiber: 3 },
+                    { foodName: 'Suran (Yam) dry', quantity: 1, unit: 'katori', calories: 100, protein: 2, carbs: 20, fat: 2, fiber: 3 },
+                    { foodName: 'Curd', quantity: 100, unit: 'g', calories: 60, protein: 3, carbs: 4, fat: 3, fiber: 0 },
+                    { foodName: 'Salad', quantity: 1, unit: 'serving', calories: 25, protein: 1, carbs: 5, fat: 0, fiber: 2 }
+                ],
+                totalCalories: 395, totalProtein: 16
+            },
+            {
+                id: 11, name: 'Rice + Rajma + Curd', emoji: '🫘', category: 'lunch', tag: 'High',
+                items: [
+                    { foodName: 'Rice (cooked)', quantity: 75, unit: 'g', calories: 90, protein: 2, carbs: 20, fat: 0.5, fiber: 0.5 },
+                    { foodName: 'Rajma', quantity: 1, unit: 'katori', calories: 170, protein: 10, carbs: 28, fat: 1, fiber: 6 },
+                    { foodName: 'Curd', quantity: 100, unit: 'g', calories: 60, protein: 3, carbs: 4, fat: 3, fiber: 0 },
+                    { foodName: 'Salad', quantity: 1, unit: 'serving', calories: 25, protein: 1, carbs: 5, fat: 0, fiber: 2 },
+                    { foodName: 'Onion Raita', quantity: 50, unit: 'g', calories: 100, protein: 7, carbs: 6, fat: 5, fiber: 1 }
+                ],
+                totalCalories: 445, totalProtein: 23
+            },
+            {
+                id: 12, name: 'Rice + Dal + Palak Paneer + Curd', emoji: '🥬', category: 'lunch', tag: 'High',
+                items: [
+                    { foodName: 'Rice (cooked)', quantity: 75, unit: 'g', calories: 90, protein: 2, carbs: 20, fat: 0.5, fiber: 0.5 },
+                    { foodName: 'Dal', quantity: 1, unit: 'katori', calories: 120, protein: 8, carbs: 18, fat: 0.5, fiber: 3 },
+                    { foodName: 'Palak Paneer', quantity: 75, unit: 'g', calories: 220, protein: 12, carbs: 8, fat: 16, fiber: 2 },
+                    { foodName: 'Curd', quantity: 100, unit: 'g', calories: 60, protein: 3, carbs: 4, fat: 3, fiber: 0 },
+                    { foodName: 'Salad', quantity: 1, unit: 'serving', calories: 25, protein: 1, carbs: 5, fat: 0, fiber: 2 }
+                ],
+                totalCalories: 515, totalProtein: 26
+            },
+
+            // ==================== DINNER ====================
+            {
+                id: 13, name: '2 Chapati + Paneer Bhurji + Salad', emoji: '🧀', category: 'dinner', tag: null,
+                items: [
+                    { foodName: 'Chapati', quantity: 2, unit: 'pcs', calories: 195, protein: 7, carbs: 30, fat: 5, fiber: 4 },
+                    { foodName: 'Paneer Bhurji', quantity: 100, unit: 'g', calories: 265, protein: 18, carbs: 5, fat: 20, fiber: 1 },
+                    { foodName: 'Salad', quantity: 1, unit: 'serving', calories: 25, protein: 1, carbs: 5, fat: 0, fiber: 2 }
+                ],
+                totalCalories: 485, totalProtein: 26
+            },
+            {
+                id: 14, name: '2 Chapati + Egg Bhurji + Salad', emoji: '🥚', category: 'dinner', tag: null,
+                items: [
+                    { foodName: 'Chapati', quantity: 2, unit: 'pcs', calories: 195, protein: 7, carbs: 30, fat: 5, fiber: 4 },
+                    { foodName: 'Egg Bhurji (2 eggs)', quantity: 2, unit: 'eggs', calories: 180, protein: 14, carbs: 2, fat: 12, fiber: 0 },
+                    { foodName: 'Salad', quantity: 1, unit: 'serving', calories: 25, protein: 1, carbs: 5, fat: 0, fiber: 2 }
+                ],
+                totalCalories: 400, totalProtein: 22
+            },
+            {
+                id: 15, name: '2 Chapati + Chole + Raita', emoji: '🫓', category: 'dinner', tag: 'Veg',
+                items: [
+                    { foodName: 'Chapati', quantity: 2, unit: 'pcs', calories: 195, protein: 7, carbs: 30, fat: 5, fiber: 4 },
+                    { foodName: 'Chole (dry)', quantity: 1, unit: 'katori', calories: 150, protein: 9, carbs: 26, fat: 3, fiber: 7 },
+                    { foodName: 'Raita', quantity: 100, unit: 'g', calories: 50, protein: 2, carbs: 4, fat: 3, fiber: 0 }
+                ],
+                totalCalories: 395, totalProtein: 18
+            },
+            {
+                id: 16, name: '2 Chapati + Chicken Curry + Salad', emoji: '🍗', category: 'dinner', tag: null,
+                items: [
+                    { foodName: 'Chapati', quantity: 2, unit: 'pcs', calories: 195, protein: 7, carbs: 30, fat: 5, fiber: 4 },
+                    { foodName: 'Chicken Curry', quantity: 100, unit: 'g', calories: 200, protein: 25, carbs: 4, fat: 10, fiber: 1 },
+                    { foodName: 'Salad', quantity: 1, unit: 'serving', calories: 25, protein: 1, carbs: 5, fat: 0, fiber: 2 }
+                ],
+                totalCalories: 420, totalProtein: 33
+            },
+            {
+                id: 17, name: '2 Chapati + Grilled Chicken + Salad', emoji: '🍗', category: 'dinner', tag: 'Max Protein',
+                items: [
+                    { foodName: 'Chapati', quantity: 2, unit: 'pcs', calories: 195, protein: 7, carbs: 30, fat: 5, fiber: 4 },
+                    { foodName: 'Grilled Chicken', quantity: 120, unit: 'g', calories: 185, protein: 35, carbs: 0, fat: 4, fiber: 0 },
+                    { foodName: 'Salad', quantity: 1, unit: 'serving', calories: 25, protein: 1, carbs: 5, fat: 0, fiber: 2 }
+                ],
+                totalCalories: 405, totalProtein: 43
+            },
+            {
+                id: 18, name: '2 Chapati + Fish Curry + Salad', emoji: '🐟', category: 'dinner', tag: null,
+                items: [
+                    { foodName: 'Chapati', quantity: 2, unit: 'pcs', calories: 195, protein: 7, carbs: 30, fat: 5, fiber: 4 },
+                    { foodName: 'Fish Curry', quantity: 100, unit: 'g', calories: 180, protein: 22, carbs: 4, fat: 8, fiber: 1 },
+                    { foodName: 'Salad', quantity: 1, unit: 'serving', calories: 25, protein: 1, carbs: 5, fat: 0, fiber: 2 }
+                ],
+                totalCalories: 400, totalProtein: 30
+            },
+            {
+                id: 19, name: '2 Chapati + Palak Paneer + Salad', emoji: '🥬', category: 'dinner', tag: 'Veg',
+                items: [
+                    { foodName: 'Chapati', quantity: 2, unit: 'pcs', calories: 195, protein: 7, carbs: 30, fat: 5, fiber: 4 },
+                    { foodName: 'Palak Paneer', quantity: 75, unit: 'g', calories: 220, protein: 12, carbs: 8, fat: 16, fiber: 2 },
+                    { foodName: 'Salad', quantity: 1, unit: 'serving', calories: 25, protein: 1, carbs: 5, fat: 0, fiber: 2 }
+                ],
+                totalCalories: 440, totalProtein: 20
+            },
+            {
+                id: 20, name: '1.5 Chapati + Grilled Fish + Salad', emoji: '🐟', category: 'dinner', tag: 'Light',
+                items: [
+                    { foodName: 'Chapati', quantity: 1.5, unit: 'pcs', calories: 145, protein: 5, carbs: 22, fat: 4, fiber: 3 },
+                    { foodName: 'Grilled Fish', quantity: 120, unit: 'g', calories: 150, protein: 28, carbs: 0, fat: 3, fiber: 0 },
+                    { foodName: 'Salad', quantity: 1, unit: 'serving', calories: 25, protein: 1, carbs: 5, fat: 0, fiber: 2 }
+                ],
+                totalCalories: 320, totalProtein: 34
+            },
+
+            // ==================== SNACKS/POST-WORKOUT ====================
+            {
+                id: 21, name: 'Protein Shake', emoji: '🥤', category: 'snacks', tag: null,
+                items: [
+                    { foodName: 'Protein Powder (whey)', quantity: 1, unit: 'scoop', calories: 130, protein: 24, carbs: 3, fat: 2, fiber: 0 }
+                ],
+                totalCalories: 130, totalProtein: 24
+            },
+
+            // ==================== CHEAT MEALS ====================
+            {
+                id: 22, name: 'Pizza (2 slices) + Salad', emoji: '🍕', category: 'cheat', tag: 'Cheat', damageLevel: 'low',
+                items: [
+                    { foodName: 'Pizza', quantity: 2, unit: 'slices', calories: 500, protein: 20, carbs: 60, fat: 20, fiber: 3 },
+                    { foodName: 'Salad', quantity: 1, unit: 'serving', calories: 50, protein: 2, carbs: 8, fat: 1, fiber: 3 }
+                ],
+                totalCalories: 550, totalProtein: 22
+            },
+            {
+                id: 23, name: 'Butter Chicken + 1 Naan', emoji: '🍗', category: 'cheat', tag: 'Cheat', damageLevel: 'medium',
+                items: [
+                    { foodName: 'Butter Chicken', quantity: 150, unit: 'g', calories: 400, protein: 28, carbs: 10, fat: 28, fiber: 2 },
+                    { foodName: 'Naan', quantity: 1, unit: 'pc', calories: 300, protein: 8, carbs: 50, fat: 8, fiber: 2 }
+                ],
+                totalCalories: 700, totalProtein: 36
+            },
+            {
+                id: 24, name: 'Biryani (1 plate)', emoji: '🍛', category: 'cheat', tag: 'Cheat', damageLevel: 'medium',
+                items: [
+                    { foodName: 'Chicken Biryani', quantity: 1, unit: 'plate', calories: 650, protein: 30, carbs: 70, fat: 25, fiber: 3 }
+                ],
+                totalCalories: 650, totalProtein: 30
+            },
+            {
+                id: 25, name: 'Burger + Small Fries', emoji: '🍔', category: 'cheat', tag: 'Cheat', damageLevel: 'medium',
+                items: [
+                    { foodName: 'Burger', quantity: 1, unit: 'pc', calories: 500, protein: 25, carbs: 40, fat: 28, fiber: 2 },
+                    { foodName: 'French Fries (small)', quantity: 1, unit: 'serving', calories: 250, protein: 3, carbs: 35, fat: 12, fiber: 3 }
+                ],
+                totalCalories: 750, totalProtein: 28
+            },
+            {
+                id: 26, name: 'Chole Bhature', emoji: '🫓', category: 'cheat', tag: 'Cheat', damageLevel: 'low',
+                items: [
+                    { foodName: 'Chole', quantity: 1, unit: 'katori', calories: 200, protein: 10, carbs: 30, fat: 5, fiber: 8 },
+                    { foodName: 'Bhatura', quantity: 1, unit: 'pc', calories: 350, protein: 6, carbs: 45, fat: 16, fiber: 2 }
+                ],
+                totalCalories: 550, totalProtein: 16
+            },
+            {
+                id: 27, name: 'Pav Bhaji (2 pav)', emoji: '🍞', category: 'cheat', tag: 'Cheat', damageLevel: 'low',
+                items: [
+                    { foodName: 'Bhaji', quantity: 1, unit: 'serving', calories: 250, protein: 8, carbs: 30, fat: 12, fiber: 6 },
+                    { foodName: 'Pav (buttered)', quantity: 2, unit: 'pcs', calories: 300, protein: 6, carbs: 50, fat: 8, fiber: 2 }
+                ],
+                totalCalories: 550, totalProtein: 14
+            }
+        ];
+
+        let savedMealCombos = JSON.parse(localStorage.getItem('fitlife_meal_combos')) || [...defaultMealCombos];
+
+        let goals = { calories: 1450, protein: 105, carbs: 140, fat: 50, fiber: 28, targetWeight: 65 };
         let dailyTotals = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
         let dailyMeals = { breakfast: [], lunch: [], dinner: [], snacks: [], postworkout: [] };
         let weightHistory = [];
         let isOffline = false;
+
+        // Exercise tracking state
+        let exerciseChecks = JSON.parse(localStorage.getItem('fitlife_exercises')) || {};
+        let prLog = JSON.parse(localStorage.getItem('fitlife_prs')) || {};
+        let currentPrExercise = null;
+
+        // Day type state (normal, light, cheat)
+        let dayTypes = JSON.parse(localStorage.getItem('fitlife_day_types')) || {};
+
+        function setDayType(type) {
+            dayTypes[selectedDate] = type;
+            localStorage.setItem('fitlife_day_types', JSON.stringify(dayTypes));
+
+            // Sync to Google Sheets
+            apiPost('setDayType', { date: selectedDate, type: type });
+
+            // Update UI
+            renderDayNav();
+            renderTabContent();
+        }
+
+        function getDayTypeLabel(type) {
+            const labels = {
+                normal: 'Normal',
+                light: '🥗 Light Day',
+                cheat: '🍕 Cheat Day'
+            };
+            return labels[type] || 'Normal';
+        }
 
         // Workout Schedule
         const workoutSchedule = {
@@ -556,14 +1037,14 @@
             6: { type: 'rest', name: 'Rest', emoji: '😴', color: 'gray' }
         };
 
-        // Workout Details (same as before)
+        // Workout Details (with PR tracking for challenges)
         const workoutDetails = {
             push: {
                 title: 'Push + Core Day',
                 subtitle: 'Chest, Shoulders, Triceps + Core',
                 color: 'orange',
                 exercises: [
-                    { name: 'Push-ups', sets: '100 total', reps: 'For time', rest: '—', notes: 'Your challenge — beat the clock!', isChallenge: true },
+                    { name: 'Push-ups', sets: '100 total', reps: 'For time', rest: '—', notes: 'Your challenge — beat the clock!', isChallenge: true, prType: 'time', prUnit: 'seconds' },
                     { name: 'Rest & Recover', sets: '—', reps: '3-5 min', rest: '—', notes: 'Let heart rate settle', isRest: true },
                     { name: 'Plank', sets: '3', reps: '30-45s', rest: '30s', notes: 'Core — keep body straight' },
                     { name: 'Dead Bug', sets: '3', reps: '10 each side', rest: '30s', notes: 'Core stability — slow & controlled' },
@@ -575,7 +1056,7 @@
                 subtitle: 'Back, Biceps, Rear Delts',
                 color: 'blue',
                 exercises: [
-                    { name: 'Pull-ups', sets: '30 total', reps: 'For time', rest: '—', notes: 'Your challenge — beat the clock!', isChallenge: true },
+                    { name: 'Pull-ups', sets: '30 total', reps: 'For time', rest: '—', notes: 'Your challenge — beat the clock!', isChallenge: true, prType: 'time', prUnit: 'seconds' },
                     { name: 'Rest & Recover', sets: '—', reps: '2-3 min', rest: '—', notes: 'Shake out arms', isRest: true },
                     { name: 'Australian Rows', sets: '3', reps: '12-15', rest: '45s', notes: 'Under table — pull chest to edge' },
                     { name: 'Doorframe Rows', sets: '3', reps: '10-12', rest: '45s', notes: 'Hold frame, lean back, pull' },
@@ -588,7 +1069,7 @@
                 subtitle: 'Quads, Glutes, Hamstrings, Calves',
                 color: 'purple',
                 exercises: [
-                    { name: 'Squats', sets: 'Max reps', reps: 'in 60s', rest: '—', notes: 'Your challenge — beat the count!', isChallenge: true },
+                    { name: 'Squats', sets: 'Max reps', reps: 'in 60s', rest: '—', notes: 'Your challenge — beat the count!', isChallenge: true, prType: 'reps', prUnit: 'reps' },
                     { name: 'Jump Squats', sets: '3', reps: '20', rest: '45s', notes: 'Explosive — land soft' },
                     { name: 'Lunges', sets: '3', reps: '10 each leg', rest: '45s', notes: 'Keep torso upright' },
                     { name: 'Hip Thrusts', sets: '3', reps: '20', rest: '45s', notes: 'Squeeze glutes at top' },
@@ -620,7 +1101,30 @@
             }
         };
 
+        // Helper function to format time
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
         // ==================== API CALLS ====================
+        // HTTP status code error messages
+        function getHttpErrorMessage(status) {
+            const messages = {
+                400: 'Invalid request data',
+                401: 'Authentication required',
+                403: 'Access denied',
+                404: 'Resource not found',
+                422: 'Validation failed',
+                429: 'Too many requests - please slow down',
+                500: 'Server error - please try again',
+                502: 'Server temporarily unavailable',
+                503: 'Service unavailable - maintenance in progress'
+            };
+            return messages[status] || `Request failed (${status})`;
+        }
+
         async function apiGet(action, params = {}) {
             const url = new URL(API_URL);
             url.searchParams.append('action', action);
@@ -630,43 +1134,112 @@
                 }
             });
 
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout for GET
+
             try {
                 const response = await fetch(url.toString(), {
                     method: 'GET',
-                    redirect: 'follow'
+                    redirect: 'follow',
+                    signal: controller.signal
                 });
+                clearTimeout(timeout);
+
                 const text = await response.text();
+                let data;
                 try {
-                    return JSON.parse(text);
+                    data = JSON.parse(text);
                 } catch {
                     console.error('Invalid JSON response:', text);
-                    return { error: 'Invalid response' };
+                    return { success: false, error: 'Invalid response from server', status: response.status };
                 }
+
+                // Handle HTTP errors
+                if (!response.ok) {
+                    console.error(`API GET Error (${response.status}):`, data);
+                    if (response.status === 503) {
+                        setOfflineMode(true);
+                    }
+                    return {
+                        success: false,
+                        error: data.error || getHttpErrorMessage(response.status),
+                        details: data.details || null,
+                        status: response.status
+                    };
+                }
+
+                // Success - ensure success flag is set
+                if (typeof data.success === 'undefined') {
+                    data.success = true;
+                }
+                return data;
+
             } catch (error) {
+                clearTimeout(timeout);
+                if (error.name === 'AbortError') {
+                    console.warn('API GET request timed out');
+                    return { success: false, error: 'Request timed out', status: 408 };
+                }
                 console.error('API GET Error:', error);
                 setOfflineMode(true);
-                return { error: error.message };
+                return { success: false, error: error.message, status: 0 };
             }
         }
 
         async function apiPost(action, data) {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+
             try {
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     redirect: 'follow',
-                    body: JSON.stringify({ action, ...data })
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ action, ...data }),
+                    signal: controller.signal
                 });
+                clearTimeout(timeout);
+
                 const text = await response.text();
+                let result;
                 try {
-                    return JSON.parse(text);
+                    result = JSON.parse(text);
                 } catch {
                     console.error('Invalid JSON response:', text);
-                    return { error: 'Invalid response' };
+                    return { success: false, error: 'Invalid response from server', status: response.status };
                 }
+
+                // Handle HTTP errors
+                if (!response.ok) {
+                    console.error(`API POST Error (${response.status}):`, result);
+                    if (response.status === 503) {
+                        setOfflineMode(true);
+                    }
+                    return {
+                        success: false,
+                        error: result.error || getHttpErrorMessage(response.status),
+                        details: result.details || null,
+                        status: response.status
+                    };
+                }
+
+                // Success - ensure success flag is set
+                if (typeof result.success === 'undefined') {
+                    result.success = true;
+                }
+                return result;
+
             } catch (error) {
+                clearTimeout(timeout);
+                if (error.name === 'AbortError') {
+                    console.warn('API POST request timed out');
+                    return { success: false, error: 'Request timed out', status: 408 };
+                }
                 console.error('API POST Error:', error);
                 setOfflineMode(true);
-                return { error: error.message };
+                return { success: false, error: error.message, status: 0 };
             }
         }
 
@@ -706,19 +1279,50 @@
         }
 
         async function loadDailyData() {
-            const result = await apiGet('getDaily', { date: selectedDate });
-            if (result.success) {
-                dailyMeals = result.meals || { breakfast: [], lunch: [], dinner: [], snacks: [], postworkout: [] };
-                dailyTotals = result.totals || { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
-            } else {
-                // Load from localStorage as fallback
-                const cached = localStorage.getItem(`fitlife_meals_${selectedDate}`);
-                if (cached) {
-                    const data = JSON.parse(cached);
-                    dailyMeals = data.meals || { breakfast: [], lunch: [], dinner: [], snacks: [], postworkout: [] };
-                    dailyTotals = data.totals || { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
-                }
+            // Always load localStorage first
+            const cached = localStorage.getItem(`fitlife_meals_${selectedDate}`);
+            let localMeals = null;
+            let localTotals = null;
+
+            if (cached) {
+                const data = JSON.parse(cached);
+                localMeals = data.meals;
+                localTotals = data.totals;
             }
+
+            const result = await apiGet('getDaily', { date: selectedDate });
+
+            if (result.success && result.meals) {
+                // Count items in server data
+                const serverMealCount = Object.values(result.meals).reduce((sum, arr) => sum + (arr?.length || 0), 0);
+                const localMealCount = localMeals ? Object.values(localMeals).reduce((sum, arr) => sum + (arr?.length || 0), 0) : 0;
+
+                // Use server data only if it has more or equal items (server is more complete)
+                // Otherwise keep local data (it might have unsync'd meals)
+                if (serverMealCount >= localMealCount) {
+                    dailyMeals = result.meals;
+                    dailyTotals = result.totals || { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
+                    // Update localStorage with server data
+                    localStorage.setItem(`fitlife_meals_${selectedDate}`, JSON.stringify({
+                        meals: dailyMeals,
+                        totals: dailyTotals
+                    }));
+                } else {
+                    // Local has more data, keep it and try to sync missing items
+                    dailyMeals = localMeals;
+                    dailyTotals = localTotals;
+                    console.log('Keeping local data - has more meals than server');
+                }
+            } else if (localMeals) {
+                // API failed, use localStorage
+                dailyMeals = localMeals;
+                dailyTotals = localTotals;
+            } else {
+                // No data anywhere, initialize empty
+                dailyMeals = { breakfast: [], lunch: [], dinner: [], snacks: [], postworkout: [] };
+                dailyTotals = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
+            }
+
             updateMacroDisplay();
         }
 
@@ -908,9 +1512,11 @@
             nav.innerHTML = days.map((day, index) => {
                 const date = new Date(currentWeekStart);
                 date.setDate(date.getDate() + index);
+                const dateKey = date.toISOString().split('T')[0];
                 const isTodayDate = isToday(date);
                 const isSelected = index === currentDayIndex;
                 const w = workout[index];
+                const dayType = dayTypes[dateKey] || 'normal';
 
                 const colorClasses = {
                     orange: 'bg-orange-100 text-orange-700 border-orange-200',
@@ -920,23 +1526,37 @@
                     gray: 'bg-slate-100 text-slate-500 border-slate-200'
                 };
 
+                // Special colors for day types
+                const dayTypeColors = {
+                    cheat: 'bg-red-100 text-red-700 border-red-300',
+                    light: 'bg-green-100 text-green-700 border-green-300'
+                };
+
                 let classes = 'p-2 rounded-xl font-semibold transition-all flex flex-col items-center cursor-pointer border-2 ';
 
                 if (isSelected) {
                     classes += 'ring-2 ring-blue-500 ring-offset-2 ';
                 }
 
-                classes += colorClasses[w.color] + ' ';
+                // Use day type color if set, otherwise workout color
+                if (dayType !== 'normal' && dayTypeColors[dayType]) {
+                    classes += dayTypeColors[dayType] + ' ';
+                } else {
+                    classes += colorClasses[w.color] + ' ';
+                }
 
                 if (isTodayDate) {
                     classes += 'ring-2 ring-amber-400 ring-offset-1 ';
                 }
 
+                // Day type indicator
+                const dayTypeIcon = dayType === 'cheat' ? '🍕' : dayType === 'light' ? '🥗' : '';
+
                 return `
                     <button class="${classes}" onclick="selectDay(${index})">
                         <span class="text-xs opacity-70">${day}</span>
                         <span class="text-lg font-bold">${date.getDate()}</span>
-                        <span class="text-xs">${w.emoji}</span>
+                        <span class="text-xs">${dayTypeIcon || w.emoji}</span>
                     </button>
                 `;
             }).join('');
@@ -967,7 +1587,29 @@
         }
 
         function renderDietTab() {
+            const currentDayType = dayTypes[selectedDate] || 'normal';
+
             return `
+                <!-- Day Type Toggle -->
+                <div class="bg-white rounded-2xl p-3 shadow-sm mb-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-medium text-slate-600">Day Type:</span>
+                        <div class="flex gap-2">
+                            <button onclick="setDayType('normal')" class="px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${currentDayType === 'normal' ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                                Normal
+                            </button>
+                            <button onclick="setDayType('light')" class="px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${currentDayType === 'light' ? 'bg-green-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                                🥗 Light
+                            </button>
+                            <button onclick="setDayType('cheat')" class="px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${currentDayType === 'cheat' ? 'bg-red-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
+                                🍕 Cheat
+                            </button>
+                        </div>
+                    </div>
+                    ${currentDayType === 'cheat' ? '<p class="text-xs text-red-500 mt-2 text-center">Cheat day! Enjoy responsibly - aim for under 2000 kcal total</p>' : ''}
+                    ${currentDayType === 'light' ? '<p class="text-xs text-green-600 mt-2 text-center">Light day - reduced intake to balance your week</p>' : ''}
+                </div>
+
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <!-- Main Meals Column -->
                     <div class="lg:col-span-2 space-y-4">
@@ -1011,8 +1653,11 @@
         function renderMealSection(mealType, title, items, isCompact = false) {
             const subtotal = items.reduce((acc, item) => ({
                 calories: acc.calories + (item.calories || 0),
-                protein: acc.protein + (item.protein || 0)
-            }), { calories: 0, protein: 0 });
+                protein: acc.protein + (item.protein || 0),
+                carbs: acc.carbs + (item.carbs || 0),
+                fat: acc.fat + (item.fat || 0),
+                fiber: acc.fiber + (item.fiber || 0)
+            }), { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 });
 
             return `
                 <div class="bg-white rounded-2xl ${isCompact ? 'p-4' : 'p-5'} shadow-sm">
@@ -1034,7 +1679,16 @@
                                 <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50 group">
                                     <div class="flex-1 min-w-0">
                                         <div class="font-medium text-sm text-slate-800 truncate">${item.foodName}</div>
-                                        <div class="text-xs text-slate-500">${item.quantity} ${item.unit} • ${Math.round(item.protein)}g protein</div>
+                                        <div class="text-xs text-slate-500">${item.quantity} ${item.unit}</div>
+                                        <div class="text-xs mt-0.5">
+                                            <span class="text-amber-600 font-medium">${Math.round(item.protein)}P</span>
+                                            <span class="text-slate-300 mx-0.5">•</span>
+                                            <span class="text-blue-500">${Math.round(item.carbs)}C</span>
+                                            <span class="text-slate-300 mx-0.5">•</span>
+                                            <span class="text-orange-500">${Math.round(item.fat)}F</span>
+                                            <span class="text-slate-300 mx-0.5">•</span>
+                                            <span class="text-green-600">${Math.round(item.fiber)}Fi</span>
+                                        </div>
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <span class="text-sm font-semibold text-rose-500">${Math.round(item.calories)}</span>
@@ -1045,13 +1699,17 @@
                                 </div>
                             `).join('')}
                         </div>
-                        <div class="mt-3 pt-3 border-t border-slate-100 flex justify-between text-sm">
-                            <span class="text-slate-500">Subtotal</span>
-                            <span class="font-semibold">
-                                <span class="text-rose-500">${Math.round(subtotal.calories)} kcal</span>
-                                <span class="text-slate-400 mx-1">•</span>
-                                <span class="text-amber-600">${Math.round(subtotal.protein)}g protein</span>
-                            </span>
+                        <div class="mt-3 pt-3 border-t border-slate-100">
+                            <div class="flex justify-between items-center text-sm mb-1">
+                                <span class="text-slate-500 font-medium">Subtotal</span>
+                                <span class="font-bold text-rose-500">${Math.round(subtotal.calories)} kcal</span>
+                            </div>
+                            <div class="flex justify-end gap-3 text-xs">
+                                <span class="text-amber-600 font-semibold">${Math.round(subtotal.protein)}g P</span>
+                                <span class="text-blue-500 font-semibold">${Math.round(subtotal.carbs)}g C</span>
+                                <span class="text-orange-500 font-semibold">${Math.round(subtotal.fat)}g F</span>
+                                <span class="text-green-600 font-semibold">${Math.round(subtotal.fiber)}g Fi</span>
+                            </div>
                         </div>
                     `}
                 </div>
@@ -1064,6 +1722,20 @@
             const workout = workoutSchedule[adjustedDay];
             const workoutData = workoutDetails[workout.type];
 
+            // Get PRs for challenge exercises
+            const pushupPr = prLog['Push-ups'] || null;
+            const pullupPr = prLog['Pull-ups'] || null;
+            const squatPr = prLog['Squats'] || null;
+
+            // Count completed exercises
+            const exerciseCount = workoutData.exercises.filter(e => !e.isRest && !e.isOptional).length;
+            let exercisesCompleted = 0;
+            workoutData.exercises.forEach((ex, i) => {
+                if (!ex.isRest && !ex.isOptional && exerciseChecks[`${selectedDate}-${i}`]) {
+                    exercisesCompleted++;
+                }
+            });
+
             return `
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-2">
@@ -1074,13 +1746,19 @@
                                     <p class="text-slate-500 text-sm mt-1">${workoutData.subtitle}</p>
                                 </div>
                                 <div class="text-right">
-                                    <div class="text-sm text-slate-400">Est. Time</div>
-                                    <div class="font-bold text-slate-700">${workout.type === 'rest' ? '—' : '25-30 min'}</div>
+                                    ${workout.type !== 'rest' ? `
+                                        <div class="text-sm font-semibold text-orange-600 bg-orange-50 px-3 py-1 rounded-full">${exercisesCompleted}/${exerciseCount} done</div>
+                                    ` : `
+                                        <div class="text-sm text-slate-400">Rest Day</div>
+                                    `}
                                 </div>
                             </div>
 
                             <div class="space-y-3">
                                 ${workoutData.exercises.map((ex, index) => {
+                                    const isChecked = exerciseChecks[`${selectedDate}-${index}`];
+                                    const pr = prLog[ex.name];
+
                                     if (ex.isRest) {
                                         return `
                                             <div class="p-4 rounded-xl bg-amber-50 border-2 border-amber-200 text-center">
@@ -1090,11 +1768,16 @@
                                     }
 
                                     return `
-                                        <div class="p-4 rounded-2xl border-2 transition-all ${ex.isOptional ? 'bg-slate-50/50 border-dashed border-slate-200' : 'bg-slate-50 border-transparent hover:border-orange-200'} ${ex.isChallenge ? 'ring-2 ring-orange-300 ring-offset-2' : ''}">
+                                        <div class="p-4 rounded-2xl border-2 transition-all ${isChecked ? 'bg-emerald-50 border-emerald-300' : ex.isOptional ? 'bg-slate-50/50 border-dashed border-slate-200' : 'bg-slate-50 border-transparent hover:border-orange-200'} ${ex.isChallenge && !isChecked ? 'ring-2 ring-orange-300 ring-offset-2' : ''}">
                                             <div class="flex gap-4">
+                                                <div class="flex-shrink-0 mt-1 cursor-pointer" onclick="toggleExercise('${selectedDate}', ${index})">
+                                                    <div class="w-7 h-7 rounded-lg border-2 flex items-center justify-center transition-all ${isChecked ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 bg-white hover:border-orange-400'}">
+                                                        ${isChecked ? '<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>' : ''}
+                                                    </div>
+                                                </div>
                                                 <div class="flex-1">
                                                     <div class="flex items-center gap-2 mb-1">
-                                                        <span class="font-semibold text-slate-800">${ex.name}</span>
+                                                        <span class="font-semibold text-slate-800 ${isChecked ? 'line-through opacity-60' : ''}">${ex.name}</span>
                                                         ${ex.isChallenge ? '<span class="text-xs font-semibold text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">🏆 CHALLENGE</span>' : ''}
                                                         ${ex.isOptional ? '<span class="text-xs text-slate-400">(Optional)</span>' : ''}
                                                     </div>
@@ -1104,6 +1787,21 @@
                                                         ${ex.rest !== '—' ? `<span><strong>Rest:</strong> ${ex.rest}</span>` : ''}
                                                     </div>
                                                     <div class="text-sm text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg inline-block">${ex.notes}</div>
+
+                                                    ${ex.isChallenge ? `
+                                                        <div class="mt-3 flex items-center gap-3 flex-wrap">
+                                                            <button onclick="openPrModal('${ex.name}', '${ex.prType}', '${ex.prUnit}')" class="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-semibold text-sm shadow-lg shadow-orange-500/30 hover:shadow-xl transition-all">
+                                                                📝 Log ${ex.prType === 'time' ? 'Time' : 'Reps'}
+                                                            </button>
+                                                            ${pr ? `
+                                                                <div class="text-sm">
+                                                                    <span class="text-slate-400">Best:</span>
+                                                                    <span class="font-bold text-orange-600">${ex.prType === 'time' ? formatTime(pr.value) : pr.value + ' reps'}</span>
+                                                                    <span class="text-xs text-slate-400">(${pr.date})</span>
+                                                                </div>
+                                                            ` : ''}
+                                                        </div>
+                                                    ` : ''}
                                                 </div>
                                             </div>
                                         </div>
@@ -1114,6 +1812,28 @@
                     </div>
 
                     <div class="space-y-5">
+                        <!-- PR Records -->
+                        <div class="bg-gradient-to-br from-orange-500 to-red-500 rounded-3xl p-5 text-white shadow-xl">
+                            <h3 class="font-display text-lg font-semibold mb-4">🏆 Personal Records</h3>
+                            <div class="space-y-3">
+                                <div class="bg-white/20 rounded-xl p-3">
+                                    <div class="text-sm opacity-80">Push-ups (100)</div>
+                                    <div class="text-xl font-bold">${pushupPr ? formatTime(pushupPr.value) : '—'}</div>
+                                    ${pushupPr ? `<div class="text-xs opacity-70">${pushupPr.date}</div>` : ''}
+                                </div>
+                                <div class="bg-white/20 rounded-xl p-3">
+                                    <div class="text-sm opacity-80">Pull-ups (30)</div>
+                                    <div class="text-xl font-bold">${pullupPr ? formatTime(pullupPr.value) : '—'}</div>
+                                    ${pullupPr ? `<div class="text-xs opacity-70">${pullupPr.date}</div>` : ''}
+                                </div>
+                                <div class="bg-white/20 rounded-xl p-3">
+                                    <div class="text-sm opacity-80">Squats (60s)</div>
+                                    <div class="text-xl font-bold">${squatPr ? squatPr.value + ' reps' : '—'}</div>
+                                    ${squatPr ? `<div class="text-xs opacity-70">${squatPr.date}</div>` : ''}
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Weekly Schedule -->
                         <div class="bg-white rounded-2xl p-5 shadow-sm">
                             <h3 class="font-display text-lg font-semibold text-slate-800 mb-4">📅 This Week</h3>
@@ -1143,13 +1863,256 @@
         }
 
         // ==================== FOOD MODAL ====================
+        let currentFoodModalTab = 'search';
+        let comboFilter = 'all';
+
         function openFoodModal(mealType) {
             currentMealType = mealType;
+            comboFilter = 'all';
+            currentFoodModalTab = 'search';
             document.getElementById('foodModal').classList.remove('hidden');
             document.getElementById('foodModal').classList.add('flex');
             document.getElementById('foodSearch').value = '';
             document.getElementById('foodSearch').focus();
+            switchFoodModalTab('search');
             renderFoodResults(foodDatabase.slice(0, 20));
+        }
+
+        function switchFoodModalTab(tab) {
+            currentFoodModalTab = tab;
+
+            // Update tab button styles
+            document.querySelectorAll('.food-modal-tab').forEach(btn => {
+                if (btn.dataset.tab === tab) {
+                    btn.classList.remove('bg-slate-100', 'text-slate-600');
+                    btn.classList.add('bg-blue-500', 'text-white');
+                } else {
+                    btn.classList.add('bg-slate-100', 'text-slate-600');
+                    btn.classList.remove('bg-blue-500', 'text-white');
+                }
+            });
+
+            // Show/hide tab content
+            const searchTab = document.getElementById('searchTabContent');
+            const combosTab = document.getElementById('combosTabContent');
+
+            if (tab === 'search') {
+                searchTab.classList.remove('hidden');
+                combosTab.classList.add('hidden');
+                document.getElementById('foodSearch').focus();
+            } else {
+                searchTab.classList.add('hidden');
+                combosTab.classList.remove('hidden');
+                renderQuickCombos();
+            }
+        }
+
+        function filterCombos(category) {
+            comboFilter = category;
+
+            // Update tab styles
+            document.querySelectorAll('.combo-tab').forEach(tab => {
+                if (tab.dataset.category === category) {
+                    tab.classList.remove('bg-slate-100', 'text-slate-600');
+                    tab.classList.add('bg-blue-500', 'text-white');
+                } else {
+                    tab.classList.add('bg-slate-100', 'text-slate-600');
+                    tab.classList.remove('bg-blue-500', 'text-white');
+                }
+            });
+
+            renderQuickCombos();
+        }
+
+        function getTagBadge(combo) {
+            if (!combo.tag) return '';
+
+            const tagStyles = {
+                'Default': 'bg-blue-100 text-blue-700',
+                'High': 'bg-amber-100 text-amber-700',
+                'Highest': 'bg-purple-100 text-purple-700',
+                'Light': 'bg-green-100 text-green-700',
+                'Max Protein': 'bg-indigo-100 text-indigo-700',
+                'Veg': 'bg-emerald-100 text-emerald-700',
+                'Cheat': 'bg-red-100 text-red-700'
+            };
+
+            const damageIcons = { low: '🟢', medium: '🟡', high: '🔴' };
+            const damageText = combo.damageLevel ? ` ${damageIcons[combo.damageLevel]}` : '';
+
+            return `<span class="text-[10px] px-1.5 py-0.5 rounded ${tagStyles[combo.tag] || 'bg-slate-100 text-slate-600'}">${combo.tag}${damageText}</span>`;
+        }
+
+        function renderQuickCombos() {
+            const container = document.getElementById('quickCombos');
+
+            // Filter by category
+            let filteredCombos = comboFilter === 'all'
+                ? savedMealCombos
+                : savedMealCombos.filter(c => c.category === comboFilter);
+
+            // Get combo background based on category
+            const getComboBg = (combo) => {
+                if (combo.category === 'cheat') return 'from-red-50 to-orange-50 border-red-200 hover:from-red-100 hover:to-orange-100';
+                if (combo.tag === 'Highest' || combo.tag === 'Max Protein') return 'from-purple-50 to-indigo-50 border-purple-200 hover:from-purple-100 hover:to-indigo-100';
+                if (combo.tag === 'High') return 'from-amber-50 to-yellow-50 border-amber-200 hover:from-amber-100 hover:to-yellow-100';
+                if (combo.tag === 'Light') return 'from-green-50 to-emerald-50 border-green-200 hover:from-green-100 hover:to-emerald-100';
+                return 'from-blue-50 to-indigo-50 border-blue-200 hover:from-blue-100 hover:to-indigo-100';
+            };
+
+            // Always show in grid layout with scroll support
+            container.className = 'flex-1 overflow-y-auto p-4 grid grid-cols-2 gap-2 content-start';
+
+            // Helper to get combo macros (handles legacy combos without all macros stored)
+            const getComboMacros = (combo) => {
+                if (combo.totalCarbs !== undefined) {
+                    return { carbs: combo.totalCarbs, fat: combo.totalFat, fiber: combo.totalFiber || 0 };
+                }
+                // Calculate from items for legacy combos
+                return combo.items.reduce((acc, item) => ({
+                    carbs: acc.carbs + (item.carbs || 0),
+                    fat: acc.fat + (item.fat || 0),
+                    fiber: acc.fiber + (item.fiber || 0)
+                }), { carbs: 0, fat: 0, fiber: 0 });
+            };
+
+            container.innerHTML = filteredCombos.map(combo => {
+                const macros = getComboMacros(combo);
+                return `
+                <button onclick="showComboPreview(${combo.id})" class="p-3 bg-gradient-to-br ${getComboBg(combo)} border rounded-xl transition-all text-left hover:shadow-md">
+                    <div class="flex items-start gap-2">
+                        <span class="text-xl">${combo.emoji}</span>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex flex-wrap items-center gap-1 mb-1">
+                                <span class="text-xs font-semibold text-slate-700 leading-tight">${combo.name}</span>
+                                ${getTagBadge(combo)}
+                            </div>
+                            <div class="text-[10px] font-medium text-rose-500">${combo.totalCalories} kcal</div>
+                            <div class="flex flex-wrap gap-x-2 text-[10px]">
+                                <span class="text-amber-600">${combo.totalProtein}g P</span>
+                                <span class="text-blue-600">${Math.round(macros.carbs)}g C</span>
+                                <span class="text-pink-500">${Math.round(macros.fat)}g F</span>
+                            </div>
+                        </div>
+                    </div>
+                </button>
+            `}).join('');
+
+            if (filteredCombos.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-2 text-center text-slate-400 py-8">
+                        No combos in this category
+                    </div>
+                `;
+            }
+        }
+
+        function showComboPreview(comboId) {
+            const combo = savedMealCombos.find(c => c.id === comboId);
+            if (!combo) return;
+
+            // Switch to search tab to show the preview
+            switchFoodModalTab('search');
+
+            // Create preview modal content
+            const itemsList = combo.items.map(item =>
+                `<div class="flex justify-between text-sm py-1">
+                    <span class="text-slate-600">${item.quantity} ${item.unit} ${item.foodName}</span>
+                    <span class="text-slate-400">${item.calories} kcal</span>
+                </div>`
+            ).join('');
+
+            // Update the food search results area to show combo preview
+            const container = document.getElementById('foodSearchResults');
+            container.innerHTML = `
+                <div class="text-center mb-4">
+                    <span class="text-4xl mb-2 block">${combo.emoji}</span>
+                    <h3 class="font-semibold text-lg text-slate-800">${combo.name}</h3>
+                    <p class="text-sm text-slate-500">Add all ${combo.items.length} items to your meal</p>
+                </div>
+
+                <div class="bg-slate-50 rounded-xl p-3 mb-4">
+                    <div class="grid grid-cols-4 gap-2 text-center text-xs mb-3">
+                        <div><div class="font-bold text-rose-500">${combo.totalCalories}</div><div class="text-slate-400">kcal</div></div>
+                        <div><div class="font-bold text-amber-600">${combo.totalProtein}g</div><div class="text-slate-400">protein</div></div>
+                        <div><div class="font-bold text-blue-600">${Math.round(combo.items.reduce((s, i) => s + i.carbs, 0))}g</div><div class="text-slate-400">carbs</div></div>
+                        <div><div class="font-bold text-pink-500">${Math.round(combo.items.reduce((s, i) => s + i.fat, 0))}g</div><div class="text-slate-400">fat</div></div>
+                    </div>
+                    <div class="border-t border-slate-200 pt-2">
+                        ${itemsList}
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <button onclick="switchFoodModalTab('combos')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-medium transition-all text-sm">
+                        ← Back to Combos
+                    </button>
+                    <button onclick="addComboToMeal(${combo.id})" class="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/30 text-sm">
+                        + Add All Items
+                    </button>
+                </div>
+            `;
+        }
+
+        async function addComboToMeal(comboId) {
+            const combo = savedMealCombos.find(c => c.id === comboId);
+            if (!combo) return;
+
+            showSyncStatus('syncing');
+            let allSynced = true;
+
+            // Add each item in the combo
+            for (const item of combo.items) {
+                const mealItem = {
+                    date: selectedDate,
+                    mealType: currentMealType,
+                    foodId: item.foodId || 0,
+                    foodName: item.foodName,
+                    quantity: item.quantity,
+                    unit: item.unit,
+                    calories: item.calories,
+                    protein: item.protein,
+                    carbs: item.carbs,
+                    fat: item.fat,
+                    fiber: item.fiber || 0
+                };
+
+                // Add to local state
+                dailyMeals[currentMealType].push(mealItem);
+                dailyTotals.calories += mealItem.calories;
+                dailyTotals.protein += mealItem.protein;
+                dailyTotals.carbs += mealItem.carbs;
+                dailyTotals.fat += mealItem.fat;
+                dailyTotals.fiber += mealItem.fiber;
+
+                // Sync to database
+                const result = await apiPost('logMeal', mealItem);
+                if (result.success && result.id) {
+                    // Store the database ID
+                    const lastIndex = dailyMeals[currentMealType].length - 1;
+                    dailyMeals[currentMealType][lastIndex].id = result.id;
+                } else if (!result.success) {
+                    allSynced = false;
+                }
+            }
+
+            // Save to localStorage as backup
+            localStorage.setItem(`fitlife_meals_${selectedDate}`, JSON.stringify({
+                meals: dailyMeals,
+                totals: dailyTotals
+            }));
+
+            // Show sync result
+            if (allSynced) {
+                showSyncStatus('success');
+            } else {
+                showSyncStatus('error', 'Some items failed to sync');
+            }
+
+            // Update UI
+            closeFoodModal();
+            updateMacroDisplay();
+            renderTabContent();
         }
 
         function closeFoodModal() {
@@ -1198,16 +2161,19 @@
             }
 
             container.innerHTML = foods.map(food => `
-                <div class="food-item p-3 rounded-xl cursor-pointer transition-all border border-transparent hover:border-blue-200" onclick="selectFood(${food.id})">
-                    <div class="flex items-center justify-between">
+                <div class="food-item p-3 rounded-xl cursor-pointer transition-all border border-transparent hover:border-blue-200 hover:bg-blue-50/50" onclick="selectFood(${food.id})">
+                    <div class="flex items-center justify-between mb-1.5">
                         <div>
                             <div class="font-medium text-slate-800">${food.name}</div>
                             <div class="text-xs text-slate-500">${food.serving} ${food.unit} • ${food.category}</div>
                         </div>
-                        <div class="text-right">
-                            <div class="font-semibold text-rose-500">${food.calories} kcal</div>
-                            <div class="text-xs text-slate-400">${food.protein}g P • ${food.carbs}g C • ${food.fat}g F</div>
-                        </div>
+                        <div class="font-bold text-rose-500">${food.calories} kcal</div>
+                    </div>
+                    <div class="flex gap-3 text-xs">
+                        <span class="text-amber-600 font-medium">${food.protein}g P</span>
+                        <span class="text-blue-600 font-medium">${food.carbs}g C</span>
+                        <span class="text-pink-500 font-medium">${food.fat}g F</span>
+                        <span class="text-emerald-600 font-medium">${food.fiber || 0}g Fiber</span>
                     </div>
                 </div>
             `).join('');
@@ -1295,17 +2261,58 @@
             updateMacroDisplay();
             renderTabContent();
 
-            // Save to localStorage
+            // Save to localStorage as backup
             localStorage.setItem(`fitlife_meals_${selectedDate}`, JSON.stringify({
                 meals: dailyMeals,
                 totals: dailyTotals
             }));
 
-            // Sync to Google Sheets
+            // Sync to database (primary storage)
+            showSyncStatus('syncing');
             const result = await apiPost('logMeal', mealItem);
-            if (!result.success) {
-                console.warn('Failed to sync to Google Sheets, saved locally');
+            if (result.success) {
+                // Store the database ID for later deletion
+                if (result.id) {
+                    const lastIndex = dailyMeals[currentMealType].length - 1;
+                    dailyMeals[currentMealType][lastIndex].id = result.id;
+
+                    // Update localStorage with the ID
+                    localStorage.setItem(`fitlife_meals_${selectedDate}`, JSON.stringify({
+                        meals: dailyMeals,
+                        totals: dailyTotals
+                    }));
+                }
+                showSyncStatus('success');
+            } else {
+                showSyncStatus('error', result.error || 'Sync failed');
+                console.error('Failed to sync meal:', result.error);
             }
+        }
+
+        // Show sync status toast
+        function showSyncStatus(status, message = '') {
+            // Remove existing toast
+            const existingToast = document.getElementById('syncToast');
+            if (existingToast) existingToast.remove();
+
+            const toast = document.createElement('div');
+            toast.id = 'syncToast';
+            toast.className = 'fixed bottom-20 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full text-sm font-medium shadow-lg z-50 transition-all';
+
+            if (status === 'syncing') {
+                toast.className += ' bg-blue-500 text-white';
+                toast.innerHTML = '<span class="inline-block animate-spin mr-2">⟳</span> Saving to cloud...';
+            } else if (status === 'success') {
+                toast.className += ' bg-green-500 text-white';
+                toast.innerHTML = '✓ Saved to cloud';
+                setTimeout(() => toast.remove(), 2000);
+            } else if (status === 'error') {
+                toast.className += ' bg-red-500 text-white';
+                toast.innerHTML = `✗ ${message || 'Sync failed'} - saved locally`;
+                setTimeout(() => toast.remove(), 4000);
+            }
+
+            document.body.appendChild(toast);
         }
 
         async function deleteFood(mealType, index) {
@@ -1330,8 +2337,20 @@
                 totals: dailyTotals
             }));
 
-            // Sync to Google Sheets
-            await apiPost('deleteMealItem', { date: selectedDate, rowIndex: index });
+            // Sync to database - use ID if available (MySQL), otherwise use index (Google Sheets)
+            showSyncStatus('syncing');
+            let result;
+            if (item.id) {
+                result = await apiPost('deleteMeal', { id: item.id });
+            } else {
+                result = await apiPost('deleteMealItem', { date: selectedDate, rowIndex: index });
+            }
+
+            if (result.success) {
+                showSyncStatus('success');
+            } else {
+                showSyncStatus('error', 'Delete sync failed');
+            }
         }
 
         // ==================== CUSTOM FOOD ====================
@@ -1377,6 +2396,246 @@
 
             closeCustomFoodModal();
             selectFood(newId);
+        }
+
+        // ==================== CREATE COMBO MODAL ====================
+        let newComboItems = [];
+        let newComboEmoji = '🍽️';
+
+        function openCreateComboModal() {
+            // Reset form
+            newComboItems = [];
+            newComboEmoji = '🍽️';
+            document.getElementById('comboName').value = '';
+            document.getElementById('comboCategory').value = 'breakfast';
+            document.getElementById('comboTag').value = '';
+            document.getElementById('selectedEmoji').textContent = '🍽️';
+            document.getElementById('comboFoodSearch').value = '';
+            document.getElementById('comboFoodResults').innerHTML = '<div class="text-center text-slate-400 py-4 text-sm">Search for foods to add</div>';
+            updateComboItemsList();
+            updateComboTotals();
+
+            // Close food modal if open
+            closeFoodModal();
+
+            document.getElementById('createComboModal').classList.remove('hidden');
+            document.getElementById('createComboModal').classList.add('flex');
+        }
+
+        function closeCreateComboModal() {
+            document.getElementById('createComboModal').classList.add('hidden');
+            document.getElementById('createComboModal').classList.remove('flex');
+            document.getElementById('emojiPicker').classList.add('hidden');
+        }
+
+        function toggleEmojiPicker() {
+            document.getElementById('emojiPicker').classList.toggle('hidden');
+        }
+
+        function selectComboEmoji(emoji) {
+            newComboEmoji = emoji;
+            document.getElementById('selectedEmoji').textContent = emoji;
+            document.getElementById('emojiPicker').classList.add('hidden');
+        }
+
+        function searchFoodsForCombo(query) {
+            const container = document.getElementById('comboFoodResults');
+
+            if (!query || query.length < 2) {
+                container.innerHTML = '<div class="text-center text-slate-400 py-4 text-sm">Search for foods to add</div>';
+                return;
+            }
+
+            const results = foodDatabase.filter(f =>
+                f.name.toLowerCase().includes(query.toLowerCase())
+            ).slice(0, 8);
+
+            if (results.length === 0) {
+                container.innerHTML = '<div class="text-center text-slate-400 py-4 text-sm">No foods found</div>';
+                return;
+            }
+
+            container.innerHTML = results.map(food => `
+                <div class="flex items-center justify-between p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-0" onclick="addFoodToCombo(${food.id})">
+                    <div>
+                        <div class="text-sm font-medium text-slate-700">${food.name}</div>
+                        <div class="text-xs text-slate-400">${food.serving} ${food.unit}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xs font-medium text-rose-500">${food.calories} kcal</div>
+                        <div class="text-xs text-slate-400">${food.protein}g P</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addFoodToCombo(foodId) {
+            const food = foodDatabase.find(f => f.id === foodId);
+            if (!food) return;
+
+            // Check if already added
+            const existing = newComboItems.find(item => item.foodId === foodId);
+            if (existing) {
+                existing.quantity += 1;
+            } else {
+                newComboItems.push({
+                    foodId: food.id,
+                    foodName: food.name,
+                    quantity: 1,
+                    unit: food.unit,
+                    serving: food.serving,
+                    calories: food.calories,
+                    protein: food.protein,
+                    carbs: food.carbs,
+                    fat: food.fat,
+                    fiber: food.fiber || 0
+                });
+            }
+
+            updateComboItemsList();
+            updateComboTotals();
+
+            // Clear search
+            document.getElementById('comboFoodSearch').value = '';
+            document.getElementById('comboFoodResults').innerHTML = '<div class="text-center text-slate-400 py-4 text-sm">Search for foods to add</div>';
+        }
+
+        function removeComboItem(index) {
+            newComboItems.splice(index, 1);
+            updateComboItemsList();
+            updateComboTotals();
+        }
+
+        function updateComboItemQty(index, delta) {
+            newComboItems[index].quantity += delta;
+            if (newComboItems[index].quantity < 0.5) {
+                newComboItems.splice(index, 1);
+            }
+            updateComboItemsList();
+            updateComboTotals();
+        }
+
+        function updateComboItemsList() {
+            const container = document.getElementById('comboFoodsList');
+            const countEl = document.getElementById('comboItemCount');
+
+            countEl.textContent = `${newComboItems.length} item${newComboItems.length !== 1 ? 's' : ''}`;
+
+            if (newComboItems.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-slate-400 py-4 text-sm border-2 border-dashed border-slate-200 rounded-xl">
+                        Add foods using search above
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = newComboItems.map((item, index) => `
+                <div class="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm font-medium text-slate-700 truncate">${item.foodName}</div>
+                        <div class="text-xs text-slate-400">${Math.round(item.calories * item.quantity)} kcal • ${Math.round(item.protein * item.quantity)}g P</div>
+                    </div>
+                    <div class="flex items-center gap-1 ml-2">
+                        <button onclick="updateComboItemQty(${index}, -0.5)" class="w-6 h-6 rounded bg-slate-200 hover:bg-slate-300 text-slate-600 text-sm font-bold">-</button>
+                        <span class="text-sm font-medium w-8 text-center">${item.quantity}</span>
+                        <button onclick="updateComboItemQty(${index}, 0.5)" class="w-6 h-6 rounded bg-slate-200 hover:bg-slate-300 text-slate-600 text-sm font-bold">+</button>
+                        <button onclick="removeComboItem(${index})" class="w-6 h-6 rounded bg-red-100 hover:bg-red-200 text-red-600 text-sm ml-1">×</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateComboTotals() {
+            const totals = newComboItems.reduce((acc, item) => ({
+                calories: acc.calories + (item.calories * item.quantity),
+                protein: acc.protein + (item.protein * item.quantity),
+                carbs: acc.carbs + (item.carbs * item.quantity),
+                fat: acc.fat + (item.fat * item.quantity),
+                fiber: acc.fiber + ((item.fiber || 0) * item.quantity)
+            }), { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 });
+
+            document.getElementById('comboTotalCal').textContent = Math.round(totals.calories);
+            document.getElementById('comboTotalProtein').textContent = Math.round(totals.protein) + 'g';
+            document.getElementById('comboTotalCarbs').textContent = Math.round(totals.carbs) + 'g';
+            document.getElementById('comboTotalFat').textContent = Math.round(totals.fat) + 'g';
+            document.getElementById('comboTotalFiber').textContent = Math.round(totals.fiber) + 'g';
+        }
+
+        async function saveNewCombo() {
+            const name = document.getElementById('comboName').value.trim();
+            const category = document.getElementById('comboCategory').value;
+            const tag = document.getElementById('comboTag').value || null;
+
+            if (!name) {
+                alert('Please enter a combo name');
+                return;
+            }
+
+            if (newComboItems.length === 0) {
+                alert('Please add at least one food to the combo');
+                return;
+            }
+
+            // Calculate totals
+            const totals = newComboItems.reduce((acc, item) => ({
+                calories: acc.calories + (item.calories * item.quantity),
+                protein: acc.protein + (item.protein * item.quantity),
+                carbs: acc.carbs + (item.carbs * item.quantity),
+                fat: acc.fat + (item.fat * item.quantity),
+                fiber: acc.fiber + ((item.fiber || 0) * item.quantity)
+            }), { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 });
+
+            // Create new combo
+            const newCombo = {
+                id: Date.now(), // Unique ID
+                name: name,
+                emoji: newComboEmoji,
+                category: category,
+                tag: tag,
+                damageLevel: category === 'cheat' ? 'medium' : null,
+                items: newComboItems.map(item => ({
+                    foodId: item.foodId,
+                    foodName: item.foodName,
+                    quantity: item.quantity,
+                    unit: item.unit,
+                    calories: Math.round(item.calories * item.quantity),
+                    protein: Math.round(item.protein * item.quantity),
+                    carbs: Math.round(item.carbs * item.quantity),
+                    fat: Math.round(item.fat * item.quantity),
+                    fiber: Math.round((item.fiber || 0) * item.quantity)
+                })),
+                totalCalories: Math.round(totals.calories),
+                totalProtein: Math.round(totals.protein),
+                totalCarbs: Math.round(totals.carbs),
+                totalFat: Math.round(totals.fat),
+                totalFiber: Math.round(totals.fiber)
+            };
+
+            // Add to saved combos
+            savedMealCombos.push(newCombo);
+
+            // Save to localStorage
+            localStorage.setItem('fitlife_custom_combos', JSON.stringify(
+                savedMealCombos.filter(c => c.id > 1000) // Only save custom combos
+            ));
+
+            // Sync to Google Sheets
+            await apiPost('saveMealCombo', { combo: newCombo });
+
+            closeCreateComboModal();
+
+            // Re-render combos
+            renderQuickCombos();
+
+            // Show success message
+            alert('Combo saved successfully!');
+        }
+
+        // Load custom combos on startup
+        function loadCustomCombos() {
+            const customCombos = JSON.parse(localStorage.getItem('fitlife_custom_combos')) || [];
+            savedMealCombos.push(...customCombos);
         }
 
         // ==================== WEIGHT MODAL ====================
@@ -1485,6 +2744,114 @@
             updateWaterDisplay();
         }
 
+        // ==================== EXERCISE TRACKING ====================
+        function toggleExercise(dateKey, index) {
+            const key = `${dateKey}-${index}`;
+            exerciseChecks[key] = !exerciseChecks[key];
+            localStorage.setItem('fitlife_exercises', JSON.stringify(exerciseChecks));
+            renderTabContent();
+
+            // Sync to Google Sheets
+            apiPost('logExercise', {
+                date: dateKey,
+                exerciseIndex: index,
+                completed: exerciseChecks[key]
+            });
+        }
+
+        // ==================== PR MODAL ====================
+        function openPrModal(exerciseName, prType, prUnit) {
+            currentPrExercise = { name: exerciseName, type: prType, unit: prUnit };
+            document.getElementById('prModal').classList.remove('hidden');
+            document.getElementById('prModal').classList.add('flex');
+            document.getElementById('prExerciseName').textContent = exerciseName;
+            document.getElementById('prLabel').textContent = prType === 'time' ? 'Time (seconds)' : 'Reps completed';
+            document.getElementById('prInput').value = prLog[exerciseName]?.value || '';
+            document.getElementById('prInput').placeholder = prType === 'time' ? '300' : '45';
+        }
+
+        function closePrModal() {
+            document.getElementById('prModal').classList.add('hidden');
+            document.getElementById('prModal').classList.remove('flex');
+            currentPrExercise = null;
+        }
+
+        function savePr() {
+            if (!currentPrExercise) return;
+            const value = parseInt(document.getElementById('prInput').value);
+
+            if (value) {
+                const existing = prLog[currentPrExercise.name];
+                const isBetter = !existing ||
+                    (currentPrExercise.type === 'time' && value < existing.value) ||
+                    (currentPrExercise.type === 'reps' && value > existing.value);
+
+                if (isBetter) {
+                    prLog[currentPrExercise.name] = {
+                        value,
+                        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                        type: currentPrExercise.type
+                    };
+                    localStorage.setItem('fitlife_prs', JSON.stringify(prLog));
+
+                    // Sync to Google Sheets
+                    apiPost('logPR', {
+                        exerciseName: currentPrExercise.name,
+                        value: value,
+                        prType: currentPrExercise.type
+                    });
+
+                    // Celebrate new PR!
+                    if (typeof confetti !== 'undefined') {
+                        confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+                    }
+                }
+
+                closePrModal();
+                renderTabContent();
+            }
+        }
+
+        // ==================== LOAD EXERCISE & PR DATA ====================
+        async function loadExerciseData() {
+            try {
+                const result = await apiGet('getExerciseLog', { date: selectedDate });
+                if (result.success && result.exercises) {
+                    // Merge with localStorage (Google Sheets takes priority)
+                    Object.assign(exerciseChecks, result.exercises);
+                    localStorage.setItem('fitlife_exercises', JSON.stringify(exerciseChecks));
+                }
+            } catch (error) {
+                console.warn('Failed to load exercise data:', error);
+            }
+        }
+
+        async function loadPRData() {
+            try {
+                const result = await apiGet('getPRLog');
+                if (result.success && result.prs) {
+                    // Update prLog with data from Google Sheets
+                    prLog = result.prs;
+                    localStorage.setItem('fitlife_prs', JSON.stringify(prLog));
+                }
+            } catch (error) {
+                console.warn('Failed to load PR data:', error);
+            }
+        }
+
+        async function loadDayTypes() {
+            try {
+                const result = await apiGet('getDayTypes');
+                if (result.success && result.dayTypes) {
+                    // Update dayTypes with data from Google Sheets
+                    dayTypes = result.dayTypes;
+                    localStorage.setItem('fitlife_day_types', JSON.stringify(dayTypes));
+                }
+            } catch (error) {
+                console.warn('Failed to load day types:', error);
+            }
+        }
+
         // ==================== KEYBOARD NAVIGATION ====================
         document.addEventListener('keydown', (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
@@ -1536,6 +2903,9 @@
                 foodDatabase = getEmbeddedFoodData();
             }
 
+            // Load custom combos from localStorage
+            loadCustomCombos();
+
             const cachedGoals = localStorage.getItem('fitlife_goals');
             if (cachedGoals) {
                 goals = JSON.parse(cachedGoals);
@@ -1569,8 +2939,12 @@
                 loadFoodDatabase(),
                 loadGoals(),
                 loadWeightHistory(),
-                loadDailyData()
+                loadDailyData(),
+                loadExerciseData(),
+                loadPRData(),
+                loadDayTypes()
             ]).then(() => {
+                renderDayNav();
                 renderTabContent();
                 loadWater();
             });
