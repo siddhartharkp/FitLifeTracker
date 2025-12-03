@@ -475,7 +475,7 @@
             <!-- Header -->
             <div class="p-4 border-b border-slate-100">
                 <div class="flex items-center justify-between">
-                    <h3 class="font-display text-xl font-semibold text-slate-800">Create New Combo</h3>
+                    <h3 id="comboModalTitle" class="font-display text-xl font-semibold text-slate-800">Create New Combo</h3>
                     <button onclick="closeCreateComboModal()" class="p-2 hover:bg-slate-100 rounded-lg">
                         <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
@@ -2043,14 +2043,20 @@
                     </div>
                 </div>
 
-                <div class="flex gap-2">
+                <div class="flex gap-2 mb-2">
                     <button onclick="switchFoodModalTab('combos')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-medium transition-all text-sm">
-                        ← Back to Combos
+                        ← Back
                     </button>
-                    <button onclick="addComboToMeal(${combo.id})" class="flex-1 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/30 text-sm">
-                        + Add All Items
+                    <button onclick="editCombo(${combo.id})" class="py-2.5 px-4 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-xl font-medium transition-all text-sm">
+                        ✏️ Edit
+                    </button>
+                    <button onclick="deleteCombo(${combo.id})" class="py-2.5 px-4 bg-red-100 hover:bg-red-200 text-red-600 rounded-xl font-medium transition-all text-sm">
+                        🗑️
                     </button>
                 </div>
+                <button onclick="addComboToMeal(${combo.id})" class="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/30 text-sm">
+                    + Add All Items
+                </button>
             `;
         }
 
@@ -2401,9 +2407,11 @@
         // ==================== CREATE COMBO MODAL ====================
         let newComboItems = [];
         let newComboEmoji = '🍽️';
+        let editingComboId = null; // Track if editing an existing combo
 
         function openCreateComboModal() {
             // Reset form
+            editingComboId = null;
             newComboItems = [];
             newComboEmoji = '🍽️';
             document.getElementById('comboName').value = '';
@@ -2414,6 +2422,9 @@
             document.getElementById('comboFoodResults').innerHTML = '<div class="text-center text-slate-400 py-4 text-sm">Search for foods to add</div>';
             updateComboItemsList();
             updateComboTotals();
+
+            // Update modal title
+            document.getElementById('comboModalTitle').textContent = 'Create Meal Combo';
 
             // Close food modal if open
             closeFoodModal();
@@ -2426,6 +2437,92 @@
             document.getElementById('createComboModal').classList.add('hidden');
             document.getElementById('createComboModal').classList.remove('flex');
             document.getElementById('emojiPicker').classList.add('hidden');
+        }
+
+        function editCombo(comboId) {
+            const combo = savedMealCombos.find(c => c.id === comboId);
+            if (!combo) return;
+
+            // Set editing mode
+            editingComboId = comboId;
+
+            // Populate form with combo data
+            newComboEmoji = combo.emoji || '🍽️';
+            document.getElementById('comboName').value = combo.name;
+            document.getElementById('comboCategory').value = combo.category || 'breakfast';
+            document.getElementById('comboTag').value = combo.tag || '';
+            document.getElementById('selectedEmoji').textContent = newComboEmoji;
+
+            // Convert combo items to editable format (need to reverse the quantity multiplication)
+            newComboItems = combo.items.map(item => {
+                // Find original food to get per-unit values
+                const food = foodDatabase.find(f => f.id === item.foodId);
+                if (food) {
+                    return {
+                        foodId: item.foodId,
+                        foodName: item.foodName,
+                        quantity: item.quantity,
+                        unit: item.unit,
+                        serving: food.serving,
+                        calories: food.calories,
+                        protein: food.protein,
+                        carbs: food.carbs,
+                        fat: food.fat,
+                        fiber: food.fiber || 0
+                    };
+                } else {
+                    // For items without matching food, use stored values as-is
+                    return {
+                        foodId: item.foodId || 0,
+                        foodName: item.foodName,
+                        quantity: item.quantity,
+                        unit: item.unit,
+                        serving: 1,
+                        calories: item.calories / item.quantity,
+                        protein: item.protein / item.quantity,
+                        carbs: item.carbs / item.quantity,
+                        fat: item.fat / item.quantity,
+                        fiber: (item.fiber || 0) / item.quantity
+                    };
+                }
+            });
+
+            // Update UI
+            updateComboItemsList();
+            updateComboTotals();
+
+            // Update modal title
+            document.getElementById('comboModalTitle').textContent = 'Edit Combo';
+
+            // Close food modal and open combo modal
+            closeFoodModal();
+            document.getElementById('createComboModal').classList.remove('hidden');
+            document.getElementById('createComboModal').classList.add('flex');
+        }
+
+        async function deleteCombo(comboId) {
+            const combo = savedMealCombos.find(c => c.id === comboId);
+            if (!combo) return;
+
+            if (!confirm(`Delete "${combo.name}" combo?`)) return;
+
+            // Remove from array
+            const index = savedMealCombos.findIndex(c => c.id === comboId);
+            if (index > -1) {
+                savedMealCombos.splice(index, 1);
+            }
+
+            // Save to localStorage
+            localStorage.setItem('fitlife_custom_combos', JSON.stringify(
+                savedMealCombos.filter(c => c.id > 1000)
+            ));
+
+            // Sync delete to server
+            await apiPost('deleteMealCombo', { id: comboId });
+
+            // Close preview and re-render
+            switchFoodModalTab('combos');
+            renderQuickCombos();
         }
 
         function toggleEmojiPicker() {
@@ -2586,9 +2683,9 @@
                 fiber: acc.fiber + ((item.fiber || 0) * item.quantity)
             }), { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 });
 
-            // Create new combo
-            const newCombo = {
-                id: Date.now(), // Unique ID
+            // Create combo object
+            const comboData = {
+                id: editingComboId || Date.now(), // Use existing ID if editing
                 name: name,
                 emoji: newComboEmoji,
                 category: category,
@@ -2612,16 +2709,24 @@
                 totalFiber: Math.round(totals.fiber)
             };
 
-            // Add to saved combos
-            savedMealCombos.push(newCombo);
+            if (editingComboId) {
+                // Update existing combo
+                const index = savedMealCombos.findIndex(c => c.id === editingComboId);
+                if (index > -1) {
+                    savedMealCombos[index] = comboData;
+                }
+            } else {
+                // Add new combo
+                savedMealCombos.push(comboData);
+            }
 
             // Save to localStorage
             localStorage.setItem('fitlife_custom_combos', JSON.stringify(
                 savedMealCombos.filter(c => c.id > 1000) // Only save custom combos
             ));
 
-            // Sync to Google Sheets
-            await apiPost('saveMealCombo', { combo: newCombo });
+            // Sync to server
+            await apiPost('saveMealCombo', { combo: comboData });
 
             closeCreateComboModal();
 
@@ -2629,7 +2734,10 @@
             renderQuickCombos();
 
             // Show success message
-            alert('Combo saved successfully!');
+            alert(editingComboId ? 'Combo updated!' : 'Combo saved!');
+
+            // Reset editing state
+            editingComboId = null;
         }
 
         // Load custom combos on startup
