@@ -2307,10 +2307,10 @@
 
             if (status === 'syncing') {
                 toast.className += ' bg-blue-500 text-white';
-                toast.innerHTML = '<span class="inline-block animate-spin mr-2">⟳</span> Saving to cloud...';
+                toast.innerHTML = '<span class="inline-block animate-spin mr-2">⟳</span> Saving...';
             } else if (status === 'success') {
                 toast.className += ' bg-green-500 text-white';
-                toast.innerHTML = '✓ Saved to cloud';
+                toast.innerHTML = '✓ Saved';
                 setTimeout(() => toast.remove(), 2000);
             } else if (status === 'error') {
                 toast.className += ' bg-red-500 text-white';
