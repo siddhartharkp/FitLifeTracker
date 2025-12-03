@@ -39,6 +39,10 @@ switch ($action) {
         deleteMeal($input['id'] ?? 0);
         break;
 
+    case 'updateMeal':
+        updateMeal($input);
+        break;
+
     case 'clearDay':
         clearDay($input['date'] ?? date('Y-m-d'));
         break;
@@ -276,6 +280,65 @@ function deleteMeal($id) {
     } catch (PDOException $e) {
         logError('deleteMeal failed: ' . $e->getMessage(), ['id' => $id]);
         jsonResponse(['success' => false, 'error' => 'Failed to delete meal'], 500);
+    }
+}
+
+function updateMeal($data) {
+    $id = $data['id'] ?? 0;
+
+    // Validate ID
+    if (!$id || !is_numeric($id) || $id <= 0) {
+        jsonResponse(['success' => false, 'error' => 'Invalid meal ID'], 400);
+        return;
+    }
+
+    // Validate numeric values
+    $quantity = floatval($data['quantity'] ?? 1);
+    $calories = floatval($data['calories'] ?? 0);
+    $protein = floatval($data['protein'] ?? 0);
+    $carbs = floatval($data['carbs'] ?? 0);
+    $fat = floatval($data['fat'] ?? 0);
+    $fiber = floatval($data['fiber'] ?? 0);
+    $unit = sanitizeString($data['unit'] ?? 'serving', 50);
+
+    if ($quantity <= 0 || $quantity > 100) {
+        jsonResponse(['success' => false, 'error' => 'Invalid quantity'], 400);
+        return;
+    }
+
+    try {
+        $db = getDB();
+        $stmt = $db->prepare("
+            UPDATE meal_log SET
+                quantity = ?,
+                unit = ?,
+                calories = ?,
+                protein = ?,
+                carbs = ?,
+                fat = ?,
+                fiber = ?
+            WHERE id = ?
+        ");
+        $stmt->execute([
+            $quantity,
+            $unit,
+            $calories,
+            $protein,
+            $carbs,
+            $fat,
+            $fiber,
+            intval($id)
+        ]);
+
+        if ($stmt->rowCount() === 0) {
+            jsonResponse(['success' => false, 'error' => 'Meal not found'], 404);
+            return;
+        }
+
+        jsonResponse(['success' => true]);
+    } catch (PDOException $e) {
+        logError('updateMeal failed: ' . $e->getMessage(), ['id' => $id]);
+        jsonResponse(['success' => false, 'error' => 'Failed to update meal'], 500);
     }
 }
 

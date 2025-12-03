@@ -594,6 +594,42 @@
         </div>
     </div>
 
+    <!-- Edit Meal Item Modal -->
+    <div id="editMealModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
+            <h3 class="font-display text-xl font-semibold text-slate-800 mb-4">✏️ Edit Meal Item</h3>
+            <div class="mb-4">
+                <div id="editMealFoodName" class="font-semibold text-slate-700 mb-2"></div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm text-slate-500 mb-1">Quantity</label>
+                        <input type="number" id="editMealQuantity" step="0.5" min="0.5" max="50"
+                               class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-center font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-500 mb-1">Unit</label>
+                        <input type="text" id="editMealUnit"
+                               class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-center focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+            </div>
+            <div class="bg-slate-50 rounded-xl p-3 mb-4">
+                <div class="text-xs text-slate-500 mb-2">Updated Macros (per unit)</div>
+                <div class="grid grid-cols-5 gap-2 text-center text-xs">
+                    <div><div class="font-bold text-rose-500" id="editMealCal">0</div><div class="text-slate-400">kcal</div></div>
+                    <div><div class="font-bold text-amber-600" id="editMealProtein">0</div><div class="text-slate-400">P</div></div>
+                    <div><div class="font-bold text-blue-500" id="editMealCarbs">0</div><div class="text-slate-400">C</div></div>
+                    <div><div class="font-bold text-orange-500" id="editMealFat">0</div><div class="text-slate-400">F</div></div>
+                    <div><div class="font-bold text-green-600" id="editMealFiber">0</div><div class="text-slate-400">Fi</div></div>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeEditMealModal()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-semibold transition-all">Cancel</button>
+                <button onclick="saveMealEdit()" class="flex-1 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-xl font-semibold transition-all shadow-lg">Save</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Weight Modal -->
     <div id="weightModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
         <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
@@ -1690,9 +1726,12 @@
                                             <span class="text-green-600">${Math.round(item.fiber)}Fi</span>
                                         </div>
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-sm font-semibold text-rose-500">${Math.round(item.calories)}</span>
-                                        <button onclick="deleteFood('${mealType}', ${index})" class="p-1 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div class="flex items-center gap-1">
+                                        <span class="text-sm font-semibold text-rose-500 mr-1">${Math.round(item.calories)}</span>
+                                        <button onclick="editMealItem('${mealType}', ${index})" class="p-1 text-slate-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" title="Edit">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                        </button>
+                                        <button onclick="deleteFood('${mealType}', ${index})" class="p-1 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" title="Delete">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                         </button>
                                     </div>
@@ -2357,6 +2396,137 @@
             } else {
                 showSyncStatus('error', 'Delete sync failed');
             }
+        }
+
+        // ==================== EDIT MEAL ITEM ====================
+        let editingMealType = null;
+        let editingMealIndex = null;
+        let editingMealOriginal = null;
+
+        function editMealItem(mealType, index) {
+            const item = dailyMeals[mealType][index];
+            if (!item) return;
+
+            editingMealType = mealType;
+            editingMealIndex = index;
+            editingMealOriginal = { ...item };
+
+            // Populate modal
+            document.getElementById('editMealFoodName').textContent = item.foodName;
+            document.getElementById('editMealQuantity').value = item.quantity;
+            document.getElementById('editMealUnit').value = item.unit;
+
+            // Calculate per-unit values
+            updateEditMealPreview();
+
+            // Show modal
+            document.getElementById('editMealModal').classList.remove('hidden');
+            document.getElementById('editMealModal').classList.add('flex');
+
+            // Add event listener for quantity changes
+            document.getElementById('editMealQuantity').oninput = updateEditMealPreview;
+        }
+
+        function closeEditMealModal() {
+            document.getElementById('editMealModal').classList.add('hidden');
+            document.getElementById('editMealModal').classList.remove('flex');
+            editingMealType = null;
+            editingMealIndex = null;
+            editingMealOriginal = null;
+        }
+
+        function updateEditMealPreview() {
+            const quantity = parseFloat(document.getElementById('editMealQuantity').value) || 1;
+            const original = editingMealOriginal;
+            if (!original) return;
+
+            // Calculate per-unit macros from original item
+            const perUnit = {
+                calories: original.calories / original.quantity,
+                protein: original.protein / original.quantity,
+                carbs: original.carbs / original.quantity,
+                fat: original.fat / original.quantity,
+                fiber: (original.fiber || 0) / original.quantity
+            };
+
+            // Calculate new totals
+            document.getElementById('editMealCal').textContent = Math.round(perUnit.calories * quantity);
+            document.getElementById('editMealProtein').textContent = Math.round(perUnit.protein * quantity);
+            document.getElementById('editMealCarbs').textContent = Math.round(perUnit.carbs * quantity);
+            document.getElementById('editMealFat').textContent = Math.round(perUnit.fat * quantity);
+            document.getElementById('editMealFiber').textContent = Math.round(perUnit.fiber * quantity);
+        }
+
+        async function saveMealEdit() {
+            if (editingMealType === null || editingMealIndex === null) return;
+
+            const newQuantity = parseFloat(document.getElementById('editMealQuantity').value) || 1;
+            const newUnit = document.getElementById('editMealUnit').value.trim() || editingMealOriginal.unit;
+            const item = dailyMeals[editingMealType][editingMealIndex];
+            const original = editingMealOriginal;
+
+            // Calculate per-unit macros
+            const perUnit = {
+                calories: original.calories / original.quantity,
+                protein: original.protein / original.quantity,
+                carbs: original.carbs / original.quantity,
+                fat: original.fat / original.quantity,
+                fiber: (original.fiber || 0) / original.quantity
+            };
+
+            // Calculate difference for totals update
+            const oldCals = item.calories;
+            const oldProtein = item.protein;
+            const oldCarbs = item.carbs;
+            const oldFat = item.fat;
+            const oldFiber = item.fiber || 0;
+
+            // Update item
+            item.quantity = newQuantity;
+            item.unit = newUnit;
+            item.calories = Math.round(perUnit.calories * newQuantity);
+            item.protein = Math.round(perUnit.protein * newQuantity);
+            item.carbs = Math.round(perUnit.carbs * newQuantity);
+            item.fat = Math.round(perUnit.fat * newQuantity);
+            item.fiber = Math.round(perUnit.fiber * newQuantity);
+
+            // Update totals
+            dailyTotals.calories += (item.calories - oldCals);
+            dailyTotals.protein += (item.protein - oldProtein);
+            dailyTotals.carbs += (item.carbs - oldCarbs);
+            dailyTotals.fat += (item.fat - oldFat);
+            dailyTotals.fiber += (item.fiber - oldFiber);
+
+            // Update UI
+            updateMacroDisplay();
+            renderTabContent();
+
+            // Save to localStorage
+            localStorage.setItem(`fitlife_meals_${selectedDate}`, JSON.stringify({
+                meals: dailyMeals,
+                totals: dailyTotals
+            }));
+
+            // Sync to database
+            showSyncStatus('syncing');
+            const result = await apiPost('updateMeal', {
+                id: item.id,
+                quantity: item.quantity,
+                unit: item.unit,
+                calories: item.calories,
+                protein: item.protein,
+                carbs: item.carbs,
+                fat: item.fat,
+                fiber: item.fiber
+            });
+
+            if (result.success) {
+                showSyncStatus('success');
+            } else {
+                showSyncStatus('error', 'Update sync failed');
+            }
+
+            closeEditMealModal();
         }
 
         // ==================== CUSTOM FOOD ====================
