@@ -141,87 +141,42 @@
     <div class="max-w-7xl mx-auto">
 
         <!-- Header -->
-        <header class="text-center mb-6">
-            <div class="flex items-center justify-center gap-3 mb-2">
-                <svg width="48" height="48" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" class="drop-shadow-lg">
-                    <circle cx="32" cy="32" r="30" fill="#2563EB" />
-                    <rect x="14" y="22" width="8" height="20" rx="2" fill="white" />
-                    <rect x="42" y="22" width="8" height="20" rx="2" fill="white" />
-                    <rect x="18" y="30" width="28" height="4" rx="1" fill="white" />
-                    <path d="M32 32 Q 40 20, 44 28 T 32 40 Q 24 40, 24 32 T 32 32" fill="#F76A1E" />
-                </svg>
-                <h1 class="font-display text-3xl md:text-4xl font-bold text-blue-800">FitLife Tracker</h1>
-            </div>
-            <p class="text-slate-500 text-lg">Your unified diet + workout companion</p>
-
-            <!-- Stats Row -->
-            <div class="flex items-center justify-center gap-3 flex-wrap mt-4">
-                <div class="bg-white px-4 py-2 rounded-full shadow-sm flex items-center gap-2">
-                    <span class="text-xl">📅</span>
-                    <div class="text-left">
-                        <div class="text-xs text-slate-400">Today</div>
-                        <div class="font-semibold text-slate-700 text-sm" id="todayDate">Loading...</div>
+        <header class="mb-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <svg width="40" height="40" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" class="drop-shadow-lg">
+                        <circle cx="32" cy="32" r="30" fill="#2563EB" />
+                        <rect x="14" y="22" width="8" height="20" rx="2" fill="white" />
+                        <rect x="42" y="22" width="8" height="20" rx="2" fill="white" />
+                        <rect x="18" y="30" width="28" height="4" rx="1" fill="white" />
+                        <path d="M32 32 Q 40 20, 44 28 T 32 40 Q 24 40, 24 32 T 32 32" fill="#F76A1E" />
+                    </svg>
+                    <h1 class="font-display text-2xl md:text-3xl font-bold text-blue-800">FitLife Tracker</h1>
+                </div>
+                <div class="flex items-center gap-2">
+                    <!-- Streak Badge -->
+                    <div class="bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1.5 rounded-full shadow-lg shadow-orange-500/30 flex items-center gap-1.5" id="streakBadge">
+                        <span class="text-base streak-fire">🔥</span>
+                        <span class="font-bold text-sm" id="streakCount">0</span>
                     </div>
+                    <!-- Settings Button -->
+                    <button onclick="openGoalsModal()" class="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-all edit-only" title="Settings">
+                        <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </button>
                 </div>
-
-                <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-full shadow-lg shadow-blue-500/30 flex items-center gap-2">
-                    <span>🎯</span>
-                    <span class="font-semibold text-sm" id="goalBadge">67.3 → 65 kg</span>
-                </div>
-
-                <div class="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-full shadow-lg shadow-orange-500/30 flex items-center gap-2" id="streakBadge">
-                    <span class="text-lg streak-fire">🔥</span>
-                    <div class="text-left">
-                        <div class="text-xs opacity-80">Streak</div>
-                        <div class="font-bold text-sm" id="streakCount">0 days</div>
-                    </div>
-                </div>
-
-                <div class="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-2 rounded-full shadow-lg shadow-emerald-500/30 flex items-center gap-2 cursor-pointer edit-only" onclick="openWeightModal()">
-                    <span>⚖️</span>
-                    <div class="text-left">
-                        <div class="text-xs opacity-80">Current</div>
-                        <div class="font-bold text-sm" id="headerWeight">-- kg</div>
-                    </div>
-                </div>
-
-                <button onclick="openGoalsModal()" class="bg-white px-4 py-2 rounded-full shadow-sm flex items-center gap-2 hover:bg-slate-50 transition-all edit-only">
-                    <span>⚙️</span>
-                    <span class="text-sm font-medium text-slate-600">Goals</span>
-                </button>
-
-                <!-- Edit Mode Toggle -->
-                <button id="editModeToggle" onclick="toggleEditMode()" class="px-4 py-2 rounded-full shadow-sm flex items-center gap-2 transition-all">
-                    <span id="editModeIcon">🔒</span>
-                    <span class="text-sm font-medium" id="editModeText">View Only</span>
-                </button>
             </div>
         </header>
 
         <!-- Motivation Banner -->
-        <div id="motivationBanner" class="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-700 rounded-3xl p-5 text-white relative overflow-hidden shadow-xl mb-6">
-            <div class="absolute inset-0 opacity-10">
-                <div class="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -translate-y-1/2 translate-x-1/2"></div>
-            </div>
-            <div class="relative z-10">
-                <div class="flex items-start justify-between mb-3">
-                    <div>
-                        <div class="text-4xl font-display font-bold opacity-30" id="motiveDateNum">01</div>
-                        <div class="text-lg font-display font-semibold -mt-1" id="motiveDayName">Monday</div>
-                        <div class="text-xs text-blue-200" id="motiveFullDate">Loading...</div>
-                    </div>
-                    <div class="px-3 py-1.5 rounded-full text-xs font-semibold bg-white/20" id="motiveWorkout">
-                        💪 Push + Core
-                    </div>
-                </div>
-
-                <div class="rounded-xl overflow-hidden shadow-xl mb-3">
-                    <img id="motiveImage" src="images/push.webp" alt="Motivation" class="w-full h-auto">
-                </div>
-
-                <div class="glass-effect rounded-xl p-3">
-                    <p class="text-white/95 text-sm italic leading-relaxed mb-1" id="motiveQuote">"The only bad workout is the one that didn't happen."</p>
-                    <span class="text-white/70 text-xs" id="motiveAuthor">— Unknown</span>
+        <div id="motivationBanner" class="rounded-3xl overflow-hidden shadow-xl mb-6 relative">
+            <img id="motiveImage" src="images/push.webp" alt="Motivation" class="w-full h-auto">
+            <!-- Workout badge top-right -->
+            <div class="absolute top-3 right-3">
+                <div class="px-3 py-1.5 rounded-full text-xs font-semibold bg-black/40 backdrop-blur-sm text-white" id="motiveWorkout">
+                    💪 Push + Core
                 </div>
             </div>
         </div>
@@ -229,7 +184,10 @@
         <!-- Macro Tracker Widget -->
         <div class="bg-white rounded-3xl p-5 shadow-sm mb-6" id="macroWidget">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="font-display text-lg font-semibold text-slate-800">📊 Today's Progress</h2>
+                <div>
+                    <h2 class="font-display text-lg font-semibold text-slate-800">📊 Today's Progress</h2>
+                    <div class="text-sm text-slate-400" id="todayDate">Loading...</div>
+                </div>
                 <div class="flex items-center gap-4">
                     <div class="text-sm font-medium text-orange-500" id="caloriesBurnt" title="Calories burnt from workout">
                         🔥 <span id="burntCalories">0</span> burnt
@@ -419,7 +377,7 @@
         </div>
 
         <!-- Main Content Tabs -->
-        <div class="flex gap-2 mb-4 justify-center">
+        <div class="flex gap-2 mb-4 items-center justify-center">
             <button onclick="switchTab('progress')" class="tab-btn px-6 py-2.5 rounded-xl font-semibold text-sm transition-all tab-active" data-tab="progress">
                 📊 Progress
             </button>
@@ -428,6 +386,12 @@
             </button>
             <button onclick="switchTab('workout')" class="tab-btn px-6 py-2.5 rounded-xl font-semibold text-sm transition-all bg-white text-slate-600 hover:bg-slate-50" data-tab="workout">
                 💪 Workout
+            </button>
+            <!-- Edit Mode Lock Icon -->
+            <button id="editModeToggle" onclick="toggleEditMode()" class="w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-slate-100 hover:bg-slate-200 text-slate-500" title="Toggle Edit Mode">
+                <svg id="editModeLockIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                </svg>
             </button>
         </div>
 
@@ -1202,7 +1166,7 @@
             upper: { url: `${imgPath}upper${imgSuffix}`, alt: 'Upper body workout' },
             rest: { url: `${imgPath}rest${imgSuffix}`, alt: 'Rest and recovery - Saturday' },
             rest2: { url: `${imgPath}rest2${imgSuffix}`, alt: 'Rest and recovery - Sunday' },
-            cardio: { url: `${imgPath}cardio${imgSuffix}`, alt: 'Cardio and running' }
+            cardio: { url: `${imgPath}cardio2${imgSuffix}`, alt: 'Cardio and running' }
         };
 
         // Daily Quotes
@@ -2195,13 +2159,9 @@
             const date = new Date(selectedDate + 'T00:00:00');
             const dayOfWeek = (date.getDay() + 6) % 7; // 0=Mon for day name display
             const workout = getWorkoutForDate(selectedDate);
-            const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-            document.getElementById('motiveDateNum').textContent = String(date.getDate()).padStart(2, '0');
-            document.getElementById('motiveDayName').textContent = dayNames[dayOfWeek];
-            document.getElementById('motiveFullDate').textContent = formatDateDisplay(selectedDate);
             document.getElementById('motiveWorkout').textContent = `${workout.emoji} ${workout.name}`;
-            document.getElementById('motiveWorkout').className = `px-3 py-1.5 rounded-full text-xs font-semibold ${workout.type === 'rest' ? 'bg-slate-500/50' : 'bg-white/20'}`;
+            document.getElementById('motiveWorkout').className = `px-3 py-1.5 rounded-full text-xs font-semibold text-white ${workout.type === 'rest' ? 'bg-slate-500/50' : 'bg-black/40'} backdrop-blur-sm`;
 
             // Use workout-type specific image (use rest2 for Sunday)
             let workoutImg;
@@ -2213,9 +2173,6 @@
             }
             document.getElementById('motiveImage').src = workoutImg.url;
             document.getElementById('motiveImage').alt = workoutImg.alt;
-
-            document.getElementById('motiveQuote').textContent = dailyQuotes[dayOfWeek].text;
-            document.getElementById('motiveAuthor').textContent = dailyQuotes[dayOfWeek].author;
         }
 
         function renderDayNav() {
@@ -2870,23 +2827,6 @@
 
                     <!-- Sidebar -->
                     <div class="space-y-5">
-                        <!-- Streak Card -->
-                        <div class="bg-gradient-to-br from-orange-500 to-red-500 rounded-3xl p-5 text-white shadow-xl">
-                            <h3 class="font-display text-lg font-semibold mb-3">🔥 Current Streak</h3>
-                            <div class="text-center py-4">
-                                <div class="text-5xl font-bold mb-2">${streak}</div>
-                                <div class="text-white/80">day${streak !== 1 ? 's' : ''} in a row!</div>
-                            </div>
-                            <div class="bg-white/20 rounded-xl p-3 mt-4">
-                                <div class="text-sm text-white/90">
-                                    ${streak >= 7 ? '🏆 Amazing! Keep the momentum going!' :
-                                      streak >= 3 ? '⭐ Great start! Stay consistent!' :
-                                      streak >= 1 ? '💪 Good job! Build your streak!' :
-                                      '🚀 Start logging to build your streak!'}
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- Goals Card -->
                         <div class="bg-white rounded-2xl p-5 shadow-sm">
                             <div class="flex items-center justify-between mb-4">
@@ -4305,23 +4245,18 @@
 
         function updateEditModeUI() {
             const toggle = document.getElementById('editModeToggle');
-            const icon = document.getElementById('editModeIcon');
-            const text = document.getElementById('editModeText');
+            const lockIcon = document.getElementById('editModeLockIcon');
 
             if (isEditMode) {
-                toggle.classList.remove('bg-white', 'hover:bg-slate-50');
-                toggle.classList.add('bg-gradient-to-r', 'from-emerald-500', 'to-green-500', 'text-white', 'shadow-lg', 'shadow-emerald-500/30');
-                icon.textContent = '🔓';
-                text.textContent = 'Edit Mode';
-                text.classList.remove('text-slate-600');
-                text.classList.add('text-white');
+                // Unlocked state - green background, open lock icon
+                toggle.classList.remove('bg-slate-100', 'hover:bg-slate-200', 'text-slate-500');
+                toggle.classList.add('bg-emerald-500', 'hover:bg-emerald-600', 'text-white');
+                lockIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path>';
             } else {
-                toggle.classList.add('bg-white', 'hover:bg-slate-50');
-                toggle.classList.remove('bg-gradient-to-r', 'from-emerald-500', 'to-green-500', 'text-white', 'shadow-lg', 'shadow-emerald-500/30');
-                icon.textContent = '🔒';
-                text.textContent = 'View Only';
-                text.classList.add('text-slate-600');
-                text.classList.remove('text-white');
+                // Locked state - gray background, closed lock icon
+                toggle.classList.add('bg-slate-100', 'hover:bg-slate-200', 'text-slate-500');
+                toggle.classList.remove('bg-emerald-500', 'hover:bg-emerald-600', 'text-white');
+                lockIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>';
             }
 
             // Show/hide edit-only elements
@@ -5051,7 +4986,7 @@
 
             const streakEl = document.getElementById('streakCount');
             if (streakEl) {
-                streakEl.textContent = `${currentStreak} day${currentStreak !== 1 ? 's' : ''}`;
+                streakEl.textContent = currentStreak;
             }
         }
 
