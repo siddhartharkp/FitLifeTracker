@@ -164,7 +164,7 @@ function validateDate($date) {
 }
 
 function validateMealType($type) {
-    $validTypes = ['breakfast', 'lunch', 'dinner', 'snacks', 'postworkout'];
+    $validTypes = ['breakfast', 'lunch', 'dinner', 'snacks', 'preworkout', 'postworkout'];
     return in_array(strtolower($type), $validTypes);
 }
 

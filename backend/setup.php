@@ -2,13 +2,36 @@
 /**
  * FitLife Tracker - Database Setup Script
  * Run once to create tables
+ *
+ * SECURITY: This script should be deleted after initial setup
+ * or protected by IP whitelist
  */
 
-// Security check
-$secret_key = 'fitlife_setup_2025';
-if (($_GET['key'] ?? '') !== $secret_key) {
+// Security: Multiple layers of protection
+$secret_key = getenv('SETUP_KEY') ?: 'fitlife_setup_2025_' . date('Ymd');
+
+// IP Whitelist - Only allow from these IPs (add your IP here)
+$allowed_ips = [
+    '127.0.0.1',
+    '::1',
+    // Add your IP address here for remote setup
+];
+
+$client_ip = $_SERVER['REMOTE_ADDR'] ?? '';
+$is_cli = php_sapi_name() === 'cli';
+
+// Check 1: Must provide correct key
+if (!$is_cli && ($_GET['key'] ?? '') !== $secret_key) {
     http_response_code(403);
-    die(json_encode(['success' => false, 'error' => 'Access denied']));
+    die(json_encode(['success' => false, 'error' => 'Access denied - invalid key']));
+}
+
+// Check 2: Must be from allowed IP (unless CLI)
+if (!$is_cli && !in_array($client_ip, $allowed_ips)) {
+    // Log the attempt
+    error_log("Setup access attempt from unauthorized IP: $client_ip");
+    http_response_code(403);
+    die(json_encode(['success' => false, 'error' => 'Access denied - IP not whitelisted. Your IP: ' . $client_ip]));
 }
 
 require_once 'config.php';
@@ -42,7 +65,7 @@ try {
     CREATE TABLE IF NOT EXISTS meal_log (
         id INT AUTO_INCREMENT PRIMARY KEY,
         date DATE NOT NULL,
-        meal_type ENUM('breakfast', 'lunch', 'dinner', 'snacks', 'postworkout') NOT NULL,
+        meal_type ENUM('breakfast', 'lunch', 'dinner', 'snacks', 'preworkout', 'postworkout') NOT NULL,
         food_id INT,
         food_name VARCHAR(255) NOT NULL,
         quantity DECIMAL(10,2) DEFAULT 1,
@@ -130,6 +153,68 @@ try {
         total_fiber INT DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- App settings table (for edit password, etc.)
+    CREATE TABLE IF NOT EXISTS app_settings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        setting_key VARCHAR(50) NOT NULL UNIQUE,
+        setting_value TEXT NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    -- Workout schedules table (7-day weekly schedule)
+    CREATE TABLE IF NOT EXISTS workout_schedules (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        day_of_week TINYINT NOT NULL UNIQUE,
+        workout_type VARCHAR(50) NOT NULL,
+        name VARCHAR(100) NOT NULL,
+        emoji VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT '',
+        color VARCHAR(50) DEFAULT 'gray',
+        INDEX idx_day (day_of_week)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    -- Workout exercises table (exercises for each workout type)
+    CREATE TABLE IF NOT EXISTS workout_exercises (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        workout_type VARCHAR(50) NOT NULL,
+        exercise_order INT NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        sets VARCHAR(50),
+        reps VARCHAR(50),
+        rest VARCHAR(50),
+        notes TEXT,
+        calories INT DEFAULT 0,
+        is_challenge TINYINT(1) DEFAULT 0,
+        pr_type ENUM('reps', 'time', 'weight') DEFAULT NULL,
+        pr_unit VARCHAR(20) DEFAULT NULL,
+        is_rest TINYINT(1) DEFAULT 0,
+        is_optional TINYINT(1) DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_workout_type (workout_type),
+        INDEX idx_order (workout_type, exercise_order)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    -- Exercise library (master list of all exercises)
+    CREATE TABLE IF NOT EXISTS exercise_library (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        category VARCHAR(100) NOT NULL,
+        type VARCHAR(50),
+        primary_muscles VARCHAR(255),
+        secondary_muscles VARCHAR(255),
+        equipment VARCHAR(255),
+        difficulty VARCHAR(50),
+        calories_per_30min INT DEFAULT 0,
+        sets_recommended VARCHAR(50),
+        reps_recommended VARCHAR(50),
+        rest_seconds INT DEFAULT 60,
+        instructions TEXT,
+        tips TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_category (category),
+        INDEX idx_name (name),
+        INDEX idx_difficulty (difficulty)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     ";
 
     // Execute each statement
@@ -146,7 +231,7 @@ try {
     echo json_encode([
         'success' => true,
         'message' => "Created $created tables",
-        'tables' => ['foods', 'meal_log', 'goals', 'weight_log', 'exercise_log', 'pr_log', 'day_types', 'water_log', 'meal_combos']
+        'tables' => ['foods', 'meal_log', 'goals', 'weight_log', 'exercise_log', 'pr_log', 'day_types', 'water_log', 'meal_combos', 'app_settings', 'workout_schedules', 'workout_exercises', 'exercise_library']
     ]);
 
 } catch (PDOException $e) {

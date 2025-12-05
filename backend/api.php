@@ -90,6 +90,10 @@ switch ($action) {
         getExerciseLog($date);
         break;
 
+    case 'getAllExerciseLogs':
+        getAllExerciseLogs();
+        break;
+
     // ==================== PR ====================
     case 'logPR':
         logPR($input);
@@ -97,6 +101,10 @@ switch ($action) {
 
     case 'getPRLog':
         getPRLog();
+        break;
+
+    case 'getStreak':
+        getStreak();
         break;
 
     // ==================== DAY TYPES ====================
@@ -118,6 +126,11 @@ switch ($action) {
         getWater($date);
         break;
 
+    case 'getWeeklyStats':
+        $startDate = $_GET['startDate'] ?? $input['startDate'] ?? date('Y-m-d', strtotime('monday this week'));
+        getWeeklyStats($startDate);
+        break;
+
     // ==================== COMBOS ====================
     case 'saveMealCombo':
         saveMealCombo($input['combo'] ?? $input);
@@ -125,6 +138,60 @@ switch ($action) {
 
     case 'getMealCombos':
         getMealCombos();
+        break;
+
+    // ==================== EDIT MODE / PASSWORD ====================
+    case 'verifyEditPassword':
+        verifyEditPassword($input);
+        break;
+
+    case 'changeEditPassword':
+        changeEditPassword($input);
+        break;
+
+    // ==================== WORKOUT SCHEDULE ====================
+    case 'getWorkoutSchedule':
+        getWorkoutSchedule();
+        break;
+
+    case 'getWorkoutExercises':
+        $workoutType = $_GET['workoutType'] ?? $input['workoutType'] ?? '';
+        getWorkoutExercises($workoutType);
+        break;
+
+    case 'getAllWorkouts':
+        getAllWorkouts();
+        break;
+
+    case 'updateExercise':
+        updateExercise($input);
+        break;
+
+    case 'addExercise':
+        addExercise($input);
+        break;
+
+    case 'deleteExercise':
+        deleteExercise($input);
+        break;
+
+    case 'reorderExercises':
+        reorderExercises($input);
+        break;
+
+    case 'saveWorkout':
+        saveWorkout($input);
+        break;
+
+    // ==================== EXERCISE LIBRARY ====================
+    case 'getExerciseLibrary':
+        $category = $_GET['category'] ?? $input['category'] ?? '';
+        $search = $_GET['search'] ?? $input['search'] ?? '';
+        getExerciseLibrary($category, $search);
+        break;
+
+    case 'getExerciseLibraryCategories':
+        getExerciseLibraryCategories();
         break;
 
     default:
@@ -308,6 +375,26 @@ function updateMeal($data) {
 
     try {
         $db = getDB();
+
+        // Optimistic locking: Check if record was modified since client fetched it
+        // Use created_at as a simple version check (if provided by client)
+        $expectedTimestamp = $data['_lastModified'] ?? null;
+
+        if ($expectedTimestamp) {
+            $stmt = $db->prepare("SELECT created_at FROM meal_log WHERE id = ?");
+            $stmt->execute([intval($id)]);
+            $row = $stmt->fetch();
+
+            if ($row && $row['created_at'] !== $expectedTimestamp) {
+                jsonResponse([
+                    'success' => false,
+                    'error' => 'Record was modified by another device. Please refresh and try again.',
+                    'code' => 'CONFLICT'
+                ], 409);
+                return;
+            }
+        }
+
         $stmt = $db->prepare("
             UPDATE meal_log SET
                 quantity = ?,
@@ -400,9 +487,10 @@ function searchFoods($search, $category) {
     try {
         $db = getDB();
 
-        // Sanitize search input
-        $search = sanitizeString($search, 100);
-        $category = sanitizeString($category, 50);
+        // Use sanitizeForDB for database queries (PDO handles SQL injection)
+        // This preserves special chars like "&" for proper searching
+        $search = sanitizeForDB($search, 100);
+        $category = sanitizeForDB($category, 50);
 
         $sql = "SELECT * FROM foods WHERE 1=1";
         $params = [];
@@ -641,19 +729,46 @@ function logExercise($data) {
     try {
         $db = getDB();
 
-        $stmt = $db->prepare("
-            INSERT INTO exercise_log (date, exercise_index, completed)
-            VALUES (?, ?, ?)
-            ON DUPLICATE KEY UPDATE completed = VALUES(completed)
-        ");
+        // Support both explicit set and toggle operations
+        // Toggle is atomic and prevents race conditions
+        $toggle = $data['toggle'] ?? false;
 
-        $stmt->execute([
-            $data['date'],
-            intval($data['exerciseIndex']),
-            $data['completed'] ? 1 : 0
-        ]);
+        if ($toggle) {
+            // Atomic toggle - useful for UI that clicks to toggle
+            // First, try to insert with completed=1
+            // If exists, flip the current value
+            $stmt = $db->prepare("
+                INSERT INTO exercise_log (date, exercise_index, completed)
+                VALUES (?, ?, 1)
+                ON DUPLICATE KEY UPDATE completed = NOT completed
+            ");
+            $stmt->execute([
+                $data['date'],
+                intval($data['exerciseIndex'])
+            ]);
 
-        jsonResponse(['success' => true]);
+            // Return the new state
+            $stmt = $db->prepare("SELECT completed FROM exercise_log WHERE date = ? AND exercise_index = ?");
+            $stmt->execute([$data['date'], intval($data['exerciseIndex'])]);
+            $row = $stmt->fetch();
+
+            jsonResponse(['success' => true, 'completed' => $row ? (bool)$row['completed'] : true]);
+        } else {
+            // Explicit set (original behavior)
+            $stmt = $db->prepare("
+                INSERT INTO exercise_log (date, exercise_index, completed)
+                VALUES (?, ?, ?)
+                ON DUPLICATE KEY UPDATE completed = VALUES(completed)
+            ");
+
+            $stmt->execute([
+                $data['date'],
+                intval($data['exerciseIndex']),
+                $data['completed'] ? 1 : 0
+            ]);
+
+            jsonResponse(['success' => true, 'completed' => (bool)$data['completed']]);
+        }
     } catch (PDOException $e) {
         logError('logExercise failed: ' . $e->getMessage(), ['data' => $data]);
         jsonResponse(['success' => false, 'error' => 'Failed to log exercise'], 500);
@@ -685,6 +800,26 @@ function getExerciseLog($date) {
     }
 }
 
+function getAllExerciseLogs() {
+    try {
+        $db = getDB();
+        // Get all exercise logs from the last 60 days
+        $stmt = $db->query("SELECT date, exercise_index, completed FROM exercise_log WHERE date >= DATE_SUB(CURDATE(), INTERVAL 60 DAY)");
+        $rows = $stmt->fetchAll();
+
+        $exercises = [];
+        foreach ($rows as $row) {
+            $key = $row['date'] . '-' . $row['exercise_index'];
+            $exercises[$key] = $row['completed'] ? true : false;
+        }
+
+        jsonResponse(['success' => true, 'exercises' => $exercises]);
+    } catch (PDOException $e) {
+        logError('getAllExerciseLogs failed: ' . $e->getMessage());
+        jsonResponse(['success' => false, 'error' => 'Failed to load exercise logs'], 500);
+    }
+}
+
 // ==================== PR FUNCTIONS ====================
 
 function logPR($data) {
@@ -700,26 +835,45 @@ function logPR($data) {
     }
 
     $prType = in_array($data['prType'] ?? '', ['reps', 'weight', 'time']) ? $data['prType'] : 'reps';
+    $newValue = floatval($data['value']);
+
+    // Use proper DATE format (Y-m-d) for storage
+    // Accept both "Dec 3" format from frontend and "2025-12-03" format
+    $rawDate = $data['achievedDate'] ?? '';
+    if (!empty($rawDate) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $rawDate)) {
+        // Already in Y-m-d format
+        $achievedDate = $rawDate;
+    } elseif (!empty($rawDate) && preg_match('/^([A-Za-z]{3})\s+(\d{1,2})$/', trim($rawDate), $matches)) {
+        // Convert "Dec 3" format to Y-m-d
+        $parsedDate = DateTime::createFromFormat('M j Y', $matches[1] . ' ' . $matches[2] . ' ' . date('Y'));
+        if ($parsedDate && $parsedDate > new DateTime()) {
+            $parsedDate->modify('-1 year'); // If date is in future, use last year
+        }
+        $achievedDate = $parsedDate ? $parsedDate->format('Y-m-d') : date('Y-m-d');
+    } else {
+        $achievedDate = date('Y-m-d');
+    }
 
     try {
         $db = getDB();
+        $db->beginTransaction();
 
-        // Check existing PR
-        $stmt = $db->prepare("SELECT value, pr_type FROM pr_log WHERE exercise_name = ?");
+        // Use SELECT FOR UPDATE to prevent race conditions
+        // This locks the row until the transaction completes
+        $stmt = $db->prepare("SELECT value, pr_type FROM pr_log WHERE exercise_name = ? FOR UPDATE");
         $stmt->execute([$exerciseName]);
         $existing = $stmt->fetch();
 
         $shouldUpdate = true;
         if ($existing) {
             if ($prType === 'time') {
-                $shouldUpdate = $data['value'] < $existing['value']; // Lower is better for time
+                $shouldUpdate = $newValue < $existing['value']; // Lower is better for time
             } else {
-                $shouldUpdate = $data['value'] > $existing['value']; // Higher is better for reps/weight
+                $shouldUpdate = $newValue > $existing['value']; // Higher is better for reps/weight
             }
         }
 
         if ($shouldUpdate) {
-            $achievedDate = date('M j');
             $stmt = $db->prepare("
                 INSERT INTO pr_log (exercise_name, value, pr_type, achieved_date)
                 VALUES (?, ?, ?, ?)
@@ -727,14 +881,16 @@ function logPR($data) {
             ");
             $stmt->execute([
                 $exerciseName,
-                floatval($data['value']),
+                $newValue,
                 $prType,
                 $achievedDate
             ]);
         }
 
+        $db->commit();
         jsonResponse(['success' => true, 'updated' => $shouldUpdate]);
     } catch (PDOException $e) {
+        $db->rollBack();
         logError('logPR failed: ' . $e->getMessage(), ['data' => $data]);
         jsonResponse(['success' => false, 'error' => 'Failed to log PR'], 500);
     }
@@ -748,10 +904,20 @@ function getPRLog() {
 
         $prs = [];
         foreach ($rows as $row) {
+            // Format date for display (convert Y-m-d to "Dec 3" format for frontend)
+            $displayDate = $row['achieved_date'];
+            if ($displayDate && preg_match('/^\d{4}-\d{2}-\d{2}$/', $displayDate)) {
+                $dateObj = DateTime::createFromFormat('Y-m-d', $displayDate);
+                if ($dateObj) {
+                    $displayDate = $dateObj->format('M j');
+                }
+            }
+
             $prs[$row['exercise_name']] = [
                 'value' => floatval($row['value']),
                 'type' => $row['pr_type'],
-                'date' => $row['achieved_date']
+                'date' => $displayDate,
+                'rawDate' => $row['achieved_date'] // Include raw date for sorting/comparison
             ];
         }
 
@@ -759,6 +925,59 @@ function getPRLog() {
     } catch (PDOException $e) {
         logError('getPRLog failed: ' . $e->getMessage());
         jsonResponse(['success' => false, 'error' => 'Failed to load PR log'], 500);
+    }
+}
+
+function getStreak() {
+    try {
+        $db = getDB();
+        $today = date('Y-m-d');
+
+        // OPTIMIZED: Single query to get all activity dates (instead of 90+ queries)
+        $stmt = $db->query("
+            SELECT DISTINCT date FROM (
+                SELECT date FROM meal_log WHERE date >= DATE_SUB(CURDATE(), INTERVAL 365 DAY)
+                UNION
+                SELECT date FROM water_log WHERE date >= DATE_SUB(CURDATE(), INTERVAL 365 DAY) AND glasses > 0
+                UNION
+                SELECT date FROM exercise_log WHERE date >= DATE_SUB(CURDATE(), INTERVAL 365 DAY) AND completed = 1
+            ) AS activity_dates
+            ORDER BY date DESC
+        ");
+        $activityDates = array_column($stmt->fetchAll(), 'date');
+
+        // Convert to a set for O(1) lookup
+        $activitySet = array_flip($activityDates);
+
+        // Calculate streak
+        // If today has no activity, start counting from yesterday
+        // This prevents streak from being 0 just because user hasn't logged yet today
+        $streak = 0;
+        $startOffset = 0;
+
+        // Check if today has activity
+        $todayHasActivity = isset($activitySet[$today]);
+        if (!$todayHasActivity) {
+            // Start from yesterday if today has no activity
+            $startOffset = 1;
+        }
+
+        for ($i = $startOffset; $i < 365; $i++) {
+            $checkDate = date('Y-m-d', strtotime("-$i days"));
+            $hasActivity = isset($activitySet[$checkDate]);
+
+            if ($hasActivity) {
+                $streak++;
+            } else {
+                // Break on first inactive day
+                break;
+            }
+        }
+
+        jsonResponse(['success' => true, 'streak' => $streak]);
+    } catch (PDOException $e) {
+        logError('getStreak failed: ' . $e->getMessage());
+        jsonResponse(['success' => false, 'error' => 'Failed to calculate streak'], 500);
     }
 }
 
@@ -826,18 +1045,42 @@ function logWater($data) {
     try {
         $db = getDB();
 
-        $stmt = $db->prepare("
-            INSERT INTO water_log (date, glasses)
-            VALUES (?, ?)
-            ON DUPLICATE KEY UPDATE glasses = VALUES(glasses)
-        ");
+        // Support both absolute set and increment operations
+        // If 'increment' is provided, use atomic increment to prevent race conditions
+        $increment = $data['increment'] ?? null;
 
-        $stmt->execute([
-            $data['date'],
-            intval($data['glasses'])
-        ]);
+        if ($increment !== null) {
+            // Atomic increment/decrement - prevents race conditions
+            $incrementVal = intval($increment);
+            $stmt = $db->prepare("
+                INSERT INTO water_log (date, glasses)
+                VALUES (?, GREATEST(0, ?))
+                ON DUPLICATE KEY UPDATE glasses = GREATEST(0, glasses + ?)
+            ");
+            $stmt->execute([
+                $data['date'],
+                $incrementVal,
+                $incrementVal
+            ]);
+        } else {
+            // Absolute set (original behavior)
+            $stmt = $db->prepare("
+                INSERT INTO water_log (date, glasses)
+                VALUES (?, ?)
+                ON DUPLICATE KEY UPDATE glasses = VALUES(glasses)
+            ");
+            $stmt->execute([
+                $data['date'],
+                intval($data['glasses'])
+            ]);
+        }
 
-        jsonResponse(['success' => true]);
+        // Return the current value after update
+        $stmt = $db->prepare("SELECT glasses FROM water_log WHERE date = ?");
+        $stmt->execute([$data['date']]);
+        $row = $stmt->fetch();
+
+        jsonResponse(['success' => true, 'glasses' => $row ? intval($row['glasses']) : 0]);
     } catch (PDOException $e) {
         logError('logWater failed: ' . $e->getMessage(), ['data' => $data]);
         jsonResponse(['success' => false, 'error' => 'Failed to log water'], 500);
@@ -860,6 +1103,102 @@ function getWater($date) {
     } catch (PDOException $e) {
         logError('getWater failed: ' . $e->getMessage(), ['date' => $date]);
         jsonResponse(['success' => false, 'error' => 'Failed to load water log'], 500);
+    }
+}
+
+// ==================== WEEKLY STATS ====================
+
+function getWeeklyStats($startDate) {
+    if (!validateDate($startDate)) {
+        jsonResponse(['success' => false, 'error' => 'Invalid start date'], 400);
+        return;
+    }
+
+    try {
+        $db = getDB();
+
+        // Calculate end date (7 days from start)
+        $endDate = date('Y-m-d', strtotime($startDate . ' +6 days'));
+
+        // Get meal stats per day
+        $stmt = $db->prepare("
+            SELECT
+                date,
+                SUM(calories) as total_calories,
+                SUM(protein) as total_protein
+            FROM meal_log
+            WHERE date >= ? AND date <= ?
+            GROUP BY date
+        ");
+        $stmt->execute([$startDate, $endDate]);
+        $mealData = $stmt->fetchAll();
+
+        // Get water stats per day
+        $stmt = $db->prepare("
+            SELECT
+                date,
+                glasses
+            FROM water_log
+            WHERE date >= ? AND date <= ?
+        ");
+        $stmt->execute([$startDate, $endDate]);
+        $waterData = $stmt->fetchAll();
+
+        // Get calories burnt per day from completed exercises
+        // Join exercise_log with workout_schedules to get workout type for each date
+        // Then join with workout_exercises to get calories for each completed exercise
+        // Use COLLATE to handle potential collation mismatch between tables
+        $stmt = $db->prepare("
+            SELECT
+                el.date,
+                SUM(COALESCE(we.calories, 0)) as total_burnt
+            FROM exercise_log el
+            INNER JOIN workout_schedules ws ON DAYOFWEEK(el.date) = ws.day_of_week
+            INNER JOIN workout_exercises we ON ws.workout_type COLLATE utf8mb4_unicode_ci = we.workout_type COLLATE utf8mb4_unicode_ci
+                AND el.exercise_index = we.exercise_order
+            WHERE el.date >= ? AND el.date <= ? AND el.completed = 1
+            GROUP BY el.date
+        ");
+        $stmt->execute([$startDate, $endDate]);
+        $burntData = $stmt->fetchAll();
+
+        // Calculate averages
+        $totalCalories = 0;
+        $totalProtein = 0;
+        $daysWithMeals = count($mealData);
+
+        foreach ($mealData as $day) {
+            $totalCalories += floatval($day['total_calories']);
+            $totalProtein += floatval($day['total_protein']);
+        }
+
+        $totalWaterMl = 0;
+        $daysWithWater = count($waterData);
+
+        foreach ($waterData as $day) {
+            $totalWaterMl += intval($day['glasses']) * 250;
+        }
+
+        $totalBurnt = 0;
+        $daysWithWorkout = count($burntData);
+
+        foreach ($burntData as $day) {
+            $totalBurnt += floatval($day['total_burnt']);
+        }
+
+        jsonResponse([
+            'success' => true,
+            'avgCalories' => $daysWithMeals > 0 ? round($totalCalories / $daysWithMeals) : 0,
+            'avgProtein' => $daysWithMeals > 0 ? round($totalProtein / $daysWithMeals) : 0,
+            'avgWaterMl' => $daysWithWater > 0 ? round($totalWaterMl / $daysWithWater) : 0,
+            'avgCaloriesBurnt' => $daysWithWorkout > 0 ? round($totalBurnt / $daysWithWorkout) : 0,
+            'daysWithMeals' => $daysWithMeals,
+            'daysWithWater' => $daysWithWater,
+            'daysWithWorkout' => $daysWithWorkout
+        ]);
+    } catch (PDOException $e) {
+        logError('getWeeklyStats failed: ' . $e->getMessage(), ['startDate' => $startDate]);
+        jsonResponse(['success' => false, 'error' => 'Failed to get weekly stats'], 500);
     }
 }
 
@@ -938,5 +1277,649 @@ function getMealCombos() {
     } catch (PDOException $e) {
         logError('getMealCombos failed: ' . $e->getMessage());
         jsonResponse(['success' => false, 'error' => 'Failed to load combos'], 500);
+    }
+}
+
+// ==================== EDIT MODE / PASSWORD FUNCTIONS ====================
+
+function getAppSetting($key) {
+    try {
+        $db = getDB();
+        $stmt = $db->prepare("SELECT setting_value FROM app_settings WHERE setting_key = ?");
+        $stmt->execute([$key]);
+        $row = $stmt->fetch();
+        return $row ? $row['setting_value'] : null;
+    } catch (PDOException $e) {
+        return null;
+    }
+}
+
+function setAppSetting($key, $value) {
+    try {
+        $db = getDB();
+        $stmt = $db->prepare("INSERT INTO app_settings (setting_key, setting_value) VALUES (?, ?)
+                              ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+        $stmt->execute([$key, $value]);
+        return true;
+    } catch (PDOException $e) {
+        return false;
+    }
+}
+
+function verifyEditPassword($data) {
+    $password = $data['password'] ?? '';
+    $client_ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+
+    if (empty($password)) {
+        jsonResponse(['success' => false, 'error' => 'Password is required'], 400);
+        return;
+    }
+
+    // Check rate limit for password attempts (stricter: 5 attempts per 15 minutes)
+    checkAuthRateLimit($client_ip);
+
+    try {
+        $hash = getAppSetting('edit_password_hash');
+
+        if (!$hash) {
+            // No password set yet - first time setup
+            // Require minimum 8 characters for initial setup
+            if (strlen($password) < 8) {
+                jsonResponse(['success' => false, 'error' => 'Password must be at least 8 characters'], 400);
+                return;
+            }
+
+            $newHash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
+            setAppSetting('edit_password_hash', $newHash);
+
+            // Generate edit token
+            $token = bin2hex(random_bytes(32));
+            jsonResponse([
+                'success' => true,
+                'valid' => true,
+                'token' => $token,
+                'message' => 'Password set successfully'
+            ]);
+            return;
+        }
+
+        $valid = password_verify($password, $hash);
+
+        if ($valid) {
+            // Reset failed attempts on successful login
+            resetAuthRateLimit($client_ip);
+
+            // Generate a simple edit token (valid for this session)
+            $token = bin2hex(random_bytes(32));
+            jsonResponse(['success' => true, 'valid' => true, 'token' => $token]);
+        } else {
+            // Log failed attempt
+            logError('Failed password attempt', ['ip' => $client_ip]);
+            jsonResponse(['success' => true, 'valid' => false]);
+        }
+    } catch (Exception $e) {
+        logError('verifyEditPassword failed: ' . $e->getMessage());
+        jsonResponse(['success' => false, 'error' => 'Password verification failed'], 500);
+    }
+}
+
+// Stricter rate limiting for authentication
+function checkAuthRateLimit($identifier) {
+    $cache_dir = __DIR__ . '/cache';
+    if (!is_dir($cache_dir)) {
+        @mkdir($cache_dir, 0755, true);
+    }
+
+    $cache_file = $cache_dir . '/auth_' . md5($identifier) . '.json';
+    $now = time();
+    $max_attempts = 5;
+    $window_seconds = 900; // 15 minutes
+
+    $data = ['attempts' => []];
+    if (file_exists($cache_file)) {
+        $content = @file_get_contents($cache_file);
+        if ($content) {
+            $data = json_decode($content, true) ?? ['attempts' => []];
+        }
+    }
+
+    // Remove expired timestamps
+    $data['attempts'] = array_values(array_filter($data['attempts'] ?? [], function($ts) use ($now, $window_seconds) {
+        return $ts > ($now - $window_seconds);
+    }));
+
+    // Check if limit exceeded
+    if (count($data['attempts']) >= $max_attempts) {
+        $retry_after = $window_seconds - ($now - min($data['attempts']));
+        http_response_code(429);
+        header('Retry-After: ' . $retry_after);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Too many password attempts. Please wait ' . ceil($retry_after / 60) . ' minutes.',
+            'retry_after' => $retry_after
+        ]);
+        exit();
+    }
+
+    // Add current attempt
+    $data['attempts'][] = $now;
+    @file_put_contents($cache_file, json_encode($data));
+}
+
+function resetAuthRateLimit($identifier) {
+    $cache_file = __DIR__ . '/cache/auth_' . md5($identifier) . '.json';
+    if (file_exists($cache_file)) {
+        @unlink($cache_file);
+    }
+}
+
+function changeEditPassword($data) {
+    $currentPassword = $data['currentPassword'] ?? '';
+    $newPassword = $data['newPassword'] ?? '';
+
+    if (empty($currentPassword) || empty($newPassword)) {
+        jsonResponse(['success' => false, 'error' => 'Both current and new passwords are required'], 400);
+        return;
+    }
+
+    if (strlen($newPassword) < 8) {
+        jsonResponse(['success' => false, 'error' => 'New password must be at least 8 characters'], 400);
+        return;
+    }
+
+    try {
+        $hash = getAppSetting('edit_password_hash');
+
+        if (!$hash || !password_verify($currentPassword, $hash)) {
+            jsonResponse(['success' => false, 'error' => 'Current password is incorrect']);
+            return;
+        }
+
+        $newHash = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]);
+        setAppSetting('edit_password_hash', $newHash);
+
+        jsonResponse(['success' => true, 'message' => 'Password changed successfully']);
+    } catch (Exception $e) {
+        logError('changeEditPassword failed: ' . $e->getMessage());
+        jsonResponse(['success' => false, 'error' => 'Failed to change password'], 500);
+    }
+}
+
+// ==================== WORKOUT FUNCTIONS ====================
+
+function getWorkoutSchedule() {
+    try {
+        $db = getDB();
+        $stmt = $db->query("SELECT day_of_week, workout_type, name, emoji, color FROM workout_schedules ORDER BY day_of_week ASC");
+        $rows = $stmt->fetchAll();
+
+        $schedule = [];
+        foreach ($rows as $row) {
+            $schedule[$row['day_of_week']] = [
+                'type' => $row['workout_type'],
+                'name' => $row['name'],
+                'emoji' => $row['emoji'],
+                'color' => $row['color']
+            ];
+        }
+
+        jsonResponse(['success' => true, 'schedule' => $schedule]);
+    } catch (PDOException $e) {
+        logError('getWorkoutSchedule failed: ' . $e->getMessage());
+        jsonResponse(['success' => false, 'error' => 'Failed to load workout schedule'], 500);
+    }
+}
+
+function getWorkoutExercises($workoutType) {
+    if (empty($workoutType)) {
+        jsonResponse(['success' => false, 'error' => 'Workout type is required'], 400);
+        return;
+    }
+
+    try {
+        $db = getDB();
+        $stmt = $db->prepare("
+            SELECT id, exercise_order, name, sets, reps, rest, notes, calories,
+                   is_challenge, pr_type, pr_unit, is_rest, is_optional
+            FROM workout_exercises
+            WHERE workout_type = ?
+            ORDER BY exercise_order ASC
+        ");
+        $stmt->execute([sanitizeString($workoutType, 50)]);
+        $rows = $stmt->fetchAll();
+
+        $exercises = array_map(function($row) {
+            return [
+                'id' => intval($row['id']),
+                'order' => intval($row['exercise_order']),
+                'name' => $row['name'],
+                'sets' => $row['sets'],
+                'reps' => $row['reps'],
+                'rest' => $row['rest'],
+                'notes' => $row['notes'],
+                'calories' => intval($row['calories']),
+                'isChallenge' => (bool)$row['is_challenge'],
+                'prType' => $row['pr_type'],
+                'prUnit' => $row['pr_unit'],
+                'isRest' => (bool)$row['is_rest'],
+                'isOptional' => (bool)$row['is_optional']
+            ];
+        }, $rows);
+
+        jsonResponse(['success' => true, 'exercises' => $exercises]);
+    } catch (PDOException $e) {
+        logError('getWorkoutExercises failed: ' . $e->getMessage(), ['workoutType' => $workoutType]);
+        jsonResponse(['success' => false, 'error' => 'Failed to load exercises'], 500);
+    }
+}
+
+function getAllWorkouts() {
+    try {
+        $db = getDB();
+
+        // Get schedule
+        $stmt = $db->query("SELECT day_of_week, workout_type, name, emoji, color FROM workout_schedules ORDER BY day_of_week ASC");
+        $scheduleRows = $stmt->fetchAll();
+
+        $schedule = [];
+        foreach ($scheduleRows as $row) {
+            $schedule[$row['day_of_week']] = [
+                'type' => $row['workout_type'],
+                'name' => $row['name'],
+                'emoji' => $row['emoji'],
+                'color' => $row['color']
+            ];
+        }
+
+        // Get all exercises grouped by workout type
+        $stmt = $db->query("
+            SELECT id, workout_type, exercise_order, name, sets, reps, rest, notes, calories,
+                   is_challenge, pr_type, pr_unit, is_rest, is_optional
+            FROM workout_exercises
+            ORDER BY workout_type, exercise_order ASC
+        ");
+        $exerciseRows = $stmt->fetchAll();
+
+        $workoutDetails = [];
+        foreach ($exerciseRows as $row) {
+            $type = $row['workout_type'];
+            if (!isset($workoutDetails[$type])) {
+                $workoutDetails[$type] = [
+                    'exercises' => [],
+                    'totalCalories' => 0
+                ];
+            }
+
+            $exercise = [
+                'id' => intval($row['id']),
+                'name' => $row['name'],
+                'sets' => $row['sets'],
+                'reps' => $row['reps'],
+                'rest' => $row['rest'],
+                'notes' => $row['notes'],
+                'calories' => intval($row['calories']),
+                'isChallenge' => (bool)$row['is_challenge'],
+                'prType' => $row['pr_type'],
+                'prUnit' => $row['pr_unit'],
+                'isRest' => (bool)$row['is_rest'],
+                'isOptional' => (bool)$row['is_optional']
+            ];
+
+            $workoutDetails[$type]['exercises'][] = $exercise;
+            $workoutDetails[$type]['totalCalories'] += intval($row['calories']);
+        }
+
+        jsonResponse([
+            'success' => true,
+            'schedule' => $schedule,
+            'workoutDetails' => $workoutDetails
+        ]);
+    } catch (PDOException $e) {
+        logError('getAllWorkouts failed: ' . $e->getMessage());
+        jsonResponse(['success' => false, 'error' => 'Failed to load workouts'], 500);
+    }
+}
+
+function updateExercise($data) {
+    $id = intval($data['id'] ?? 0);
+    if ($id <= 0) {
+        jsonResponse(['success' => false, 'error' => 'Invalid exercise ID'], 400);
+        return;
+    }
+
+    try {
+        $db = getDB();
+
+        $stmt = $db->prepare("
+            UPDATE workout_exercises SET
+                name = ?,
+                sets = ?,
+                reps = ?,
+                rest = ?,
+                notes = ?,
+                calories = ?,
+                is_challenge = ?,
+                pr_type = ?,
+                pr_unit = ?,
+                is_rest = ?,
+                is_optional = ?
+            WHERE id = ?
+        ");
+
+        $stmt->execute([
+            sanitizeString($data['name'] ?? '', 255),
+            sanitizeString($data['sets'] ?? '', 50),
+            sanitizeString($data['reps'] ?? '', 50),
+            sanitizeString($data['rest'] ?? '', 50),
+            sanitizeString($data['notes'] ?? '', 1000),
+            intval($data['calories'] ?? 0),
+            ($data['isChallenge'] ?? false) ? 1 : 0,
+            in_array($data['prType'] ?? null, ['reps', 'time', 'weight', null]) ? ($data['prType'] ?: null) : null,
+            sanitizeString($data['prUnit'] ?? '', 20) ?: null,
+            ($data['isRest'] ?? false) ? 1 : 0,
+            ($data['isOptional'] ?? false) ? 1 : 0,
+            $id
+        ]);
+
+        if ($stmt->rowCount() === 0) {
+            jsonResponse(['success' => false, 'error' => 'Exercise not found'], 404);
+            return;
+        }
+
+        jsonResponse(['success' => true]);
+    } catch (PDOException $e) {
+        logError('updateExercise failed: ' . $e->getMessage(), ['id' => $id]);
+        jsonResponse(['success' => false, 'error' => 'Failed to update exercise'], 500);
+    }
+}
+
+function addExercise($data) {
+    $workoutType = sanitizeString($data['workoutType'] ?? '', 50);
+    if (empty($workoutType)) {
+        jsonResponse(['success' => false, 'error' => 'Workout type is required'], 400);
+        return;
+    }
+
+    try {
+        $db = getDB();
+
+        // Get max order for this workout type
+        $stmt = $db->prepare("SELECT MAX(exercise_order) as max_order FROM workout_exercises WHERE workout_type = ?");
+        $stmt->execute([$workoutType]);
+        $row = $stmt->fetch();
+        $nextOrder = ($row['max_order'] ?? 0) + 1;
+
+        $stmt = $db->prepare("
+            INSERT INTO workout_exercises
+            (workout_type, exercise_order, name, sets, reps, rest, notes, calories, is_challenge, pr_type, pr_unit, is_rest, is_optional)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+
+        $stmt->execute([
+            $workoutType,
+            $nextOrder,
+            sanitizeString($data['name'] ?? 'New Exercise', 255),
+            sanitizeString($data['sets'] ?? '3', 50),
+            sanitizeString($data['reps'] ?? '10', 50),
+            sanitizeString($data['rest'] ?? '30s', 50),
+            sanitizeString($data['notes'] ?? '', 1000),
+            intval($data['calories'] ?? 0),
+            ($data['isChallenge'] ?? false) ? 1 : 0,
+            in_array($data['prType'] ?? null, ['reps', 'time', 'weight', null]) ? ($data['prType'] ?: null) : null,
+            sanitizeString($data['prUnit'] ?? '', 20) ?: null,
+            ($data['isRest'] ?? false) ? 1 : 0,
+            ($data['isOptional'] ?? false) ? 1 : 0
+        ]);
+
+        jsonResponse(['success' => true, 'id' => $db->lastInsertId()]);
+    } catch (PDOException $e) {
+        logError('addExercise failed: ' . $e->getMessage(), ['data' => $data]);
+        jsonResponse(['success' => false, 'error' => 'Failed to add exercise'], 500);
+    }
+}
+
+function deleteExercise($data) {
+    $id = intval($data['id'] ?? 0);
+    if ($id <= 0) {
+        jsonResponse(['success' => false, 'error' => 'Invalid exercise ID'], 400);
+        return;
+    }
+
+    try {
+        $db = getDB();
+        $stmt = $db->prepare("DELETE FROM workout_exercises WHERE id = ?");
+        $stmt->execute([$id]);
+
+        if ($stmt->rowCount() === 0) {
+            jsonResponse(['success' => false, 'error' => 'Exercise not found'], 404);
+            return;
+        }
+
+        jsonResponse(['success' => true]);
+    } catch (PDOException $e) {
+        logError('deleteExercise failed: ' . $e->getMessage(), ['id' => $id]);
+        jsonResponse(['success' => false, 'error' => 'Failed to delete exercise'], 500);
+    }
+}
+
+function reorderExercises($data) {
+    $workoutType = sanitizeString($data['workoutType'] ?? '', 50);
+    $exerciseIds = $data['exerciseIds'] ?? [];
+
+    if (empty($workoutType) || empty($exerciseIds) || !is_array($exerciseIds)) {
+        jsonResponse(['success' => false, 'error' => 'Workout type and exercise IDs are required'], 400);
+        return;
+    }
+
+    try {
+        $db = getDB();
+        $db->beginTransaction();
+
+        $stmt = $db->prepare("UPDATE workout_exercises SET exercise_order = ? WHERE id = ? AND workout_type = ?");
+
+        $order = 1;
+        foreach ($exerciseIds as $id) {
+            $stmt->execute([$order, intval($id), $workoutType]);
+            $order++;
+        }
+
+        $db->commit();
+        jsonResponse(['success' => true]);
+    } catch (PDOException $e) {
+        $db->rollBack();
+        logError('reorderExercises failed: ' . $e->getMessage(), ['data' => $data]);
+        jsonResponse(['success' => false, 'error' => 'Failed to reorder exercises'], 500);
+    }
+}
+
+function saveWorkout($data) {
+    $workoutType = sanitizeString($data['workoutType'] ?? '', 50);
+    $exercises = $data['exercises'] ?? [];
+
+    if (empty($workoutType)) {
+        jsonResponse(['success' => false, 'error' => 'Workout type is required'], 400);
+        return;
+    }
+
+    try {
+        $db = getDB();
+        $db->beginTransaction();
+
+        // Get current exercise IDs for this workout type
+        $stmt = $db->prepare("SELECT id FROM workout_exercises WHERE workout_type = ?");
+        $stmt->execute([$workoutType]);
+        $existingIds = array_column($stmt->fetchAll(), 'id');
+
+        // Track which IDs we're keeping
+        $keepIds = [];
+
+        // Prepare statements
+        $insertStmt = $db->prepare("
+            INSERT INTO workout_exercises
+            (workout_type, exercise_order, name, sets, reps, rest, notes, calories, is_challenge, pr_type, pr_unit, is_rest, is_optional)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+
+        $updateStmt = $db->prepare("
+            UPDATE workout_exercises SET
+                exercise_order = ?,
+                name = ?,
+                sets = ?,
+                reps = ?,
+                rest = ?,
+                notes = ?,
+                calories = ?,
+                is_challenge = ?,
+                pr_type = ?,
+                pr_unit = ?,
+                is_rest = ?,
+                is_optional = ?
+            WHERE id = ? AND workout_type = ?
+        ");
+
+        $order = 1;
+        foreach ($exercises as $ex) {
+            $id = isset($ex['id']) ? intval($ex['id']) : 0;
+            $name = sanitizeString($ex['name'] ?? '', 255);
+            $sets = sanitizeString($ex['sets'] ?? '3', 50);
+            $reps = sanitizeString($ex['reps'] ?? '10', 50);
+            $rest = sanitizeString($ex['rest'] ?? '30s', 50);
+            $notes = sanitizeString($ex['notes'] ?? '', 1000);
+            $calories = intval($ex['calories'] ?? 0);
+            $isChallenge = ($ex['is_challenge'] ?? $ex['isChallenge'] ?? false) ? 1 : 0;
+            $prType = in_array($ex['pr_type'] ?? $ex['prType'] ?? null, ['reps', 'time', 'weight', null]) ? ($ex['pr_type'] ?? $ex['prType'] ?? null) : null;
+            $prUnit = sanitizeString($ex['pr_unit'] ?? $ex['prUnit'] ?? '', 20) ?: null;
+            $isRest = ($ex['is_rest'] ?? $ex['isRest'] ?? false) ? 1 : 0;
+            $isOptional = ($ex['is_optional'] ?? $ex['isOptional'] ?? false) ? 1 : 0;
+
+            if ($id > 0 && in_array($id, $existingIds)) {
+                // Update existing exercise
+                $updateStmt->execute([
+                    $order,
+                    $name,
+                    $sets,
+                    $reps,
+                    $rest,
+                    $notes,
+                    $calories,
+                    $isChallenge,
+                    $prType,
+                    $prUnit,
+                    $isRest,
+                    $isOptional,
+                    $id,
+                    $workoutType
+                ]);
+                $keepIds[] = $id;
+            } else {
+                // Insert new exercise
+                $insertStmt->execute([
+                    $workoutType,
+                    $order,
+                    $name,
+                    $sets,
+                    $reps,
+                    $rest,
+                    $notes,
+                    $calories,
+                    $isChallenge,
+                    $prType,
+                    $prUnit,
+                    $isRest,
+                    $isOptional
+                ]);
+                $keepIds[] = $db->lastInsertId();
+            }
+            $order++;
+        }
+
+        // Delete exercises that were removed
+        $deleteIds = array_diff($existingIds, $keepIds);
+        if (!empty($deleteIds)) {
+            $placeholders = implode(',', array_fill(0, count($deleteIds), '?'));
+            $deleteStmt = $db->prepare("DELETE FROM workout_exercises WHERE id IN ($placeholders) AND workout_type = ?");
+            $deleteStmt->execute([...array_values($deleteIds), $workoutType]);
+        }
+
+        $db->commit();
+        jsonResponse(['success' => true, 'message' => 'Workout saved successfully']);
+    } catch (PDOException $e) {
+        $db->rollBack();
+        logError('saveWorkout failed: ' . $e->getMessage(), ['data' => $data]);
+        jsonResponse(['success' => false, 'error' => 'Failed to save workout'], 500);
+    }
+}
+
+// ==================== EXERCISE LIBRARY FUNCTIONS ====================
+
+function getExerciseLibrary($category, $search) {
+    try {
+        $db = getDB();
+
+        $sql = "SELECT * FROM exercise_library WHERE 1=1";
+        $params = [];
+
+        // Filter by category
+        if (!empty($category) && $category !== 'all') {
+            // Use sanitizeForDB for database queries (PDO handles SQL injection)
+            $sql .= " AND category = ?";
+            $params[] = sanitizeForDB($category, 100);
+        }
+
+        // Search by name - use sanitizeForDB to preserve special chars like "&"
+        if (!empty($search)) {
+            $sql .= " AND (name LIKE ? OR primary_muscles LIKE ? OR equipment LIKE ?)";
+            $searchTerm = "%" . sanitizeForDB($search, 100) . "%";
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+        }
+
+        $sql .= " ORDER BY category, name ASC LIMIT 100";
+
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll();
+
+        $exercises = array_map(function($row) {
+            return [
+                'id' => intval($row['id']),
+                'name' => $row['name'],
+                'category' => $row['category'],
+                'type' => $row['type'],
+                'primaryMuscles' => $row['primary_muscles'],
+                'secondaryMuscles' => $row['secondary_muscles'],
+                'equipment' => $row['equipment'],
+                'difficulty' => $row['difficulty'],
+                'caloriesPer30Min' => intval($row['calories_per_30min']),
+                'setsRecommended' => $row['sets_recommended'],
+                'repsRecommended' => $row['reps_recommended'],
+                'restSeconds' => intval($row['rest_seconds']),
+                'instructions' => $row['instructions'],
+                'tips' => $row['tips']
+            ];
+        }, $rows);
+
+        jsonResponse(['success' => true, 'exercises' => $exercises]);
+    } catch (PDOException $e) {
+        logError('getExerciseLibrary failed: ' . $e->getMessage());
+        jsonResponse(['success' => false, 'error' => 'Failed to load exercise library'], 500);
+    }
+}
+
+function getExerciseLibraryCategories() {
+    try {
+        $db = getDB();
+        $stmt = $db->query("SELECT DISTINCT category FROM exercise_library ORDER BY category ASC");
+        $rows = $stmt->fetchAll();
+
+        $categories = array_map(function($row) {
+            return $row['category'];
+        }, $rows);
+
+        jsonResponse(['success' => true, 'categories' => $categories]);
+    } catch (PDOException $e) {
+        logError('getExerciseLibraryCategories failed: ' . $e->getMessage());
+        jsonResponse(['success' => false, 'error' => 'Failed to load categories'], 500);
     }
 }

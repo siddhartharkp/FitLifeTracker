@@ -4,6 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FitLife Tracker | Diet + Workout</title>
+    <meta name="description" content="Track your diet, workouts, water intake, and fitness goals with FitLife Tracker - your unified health companion.">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="apple-touch-icon" href="favicon.svg">
+
+    <!-- Open Graph / Social Media Sharing -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="FitLife Tracker | Diet + Workout">
+    <meta property="og:description" content="Track your diet, workouts, water intake, and fitness goals with FitLife Tracker.">
+    <meta property="og:image" content="https://codesoft.co.in/fitlife/favicon.svg">
+    <meta property="og:url" content="https://codesoft.co.in/fitlife/">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="FitLife Tracker | Diet + Workout">
+    <meta name="twitter:description" content="Track your diet, workouts, water intake, and fitness goals.">
+    <meta name="twitter:image" content="https://codesoft.co.in/fitlife/favicon.svg">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -74,7 +93,7 @@
     <!-- Connection Status Banner -->
     <div id="connectionBanner" class="hidden fixed top-0 left-0 right-0 bg-amber-500 text-white text-center py-2 text-sm z-50">
         <span class="pulse-dot inline-block w-2 h-2 bg-white rounded-full mr-2"></span>
-        Connecting to Google Sheets...
+        Connecting to server...
     </div>
 
     <div class="max-w-7xl mx-auto">
@@ -82,9 +101,14 @@
         <!-- Header -->
         <header class="text-center mb-6">
             <div class="flex items-center justify-center gap-3 mb-2">
-                <span class="text-4xl">💪</span>
+                <svg width="48" height="48" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" class="drop-shadow-lg">
+                    <circle cx="32" cy="32" r="30" fill="#2563EB" />
+                    <rect x="14" y="22" width="8" height="20" rx="2" fill="white" />
+                    <rect x="42" y="22" width="8" height="20" rx="2" fill="white" />
+                    <rect x="18" y="30" width="28" height="4" rx="1" fill="white" />
+                    <path d="M32 32 Q 40 20, 44 28 T 32 40 Q 24 40, 24 32 T 32 32" fill="#F76A1E" />
+                </svg>
                 <h1 class="font-display text-3xl md:text-4xl font-bold text-blue-800">FitLife Tracker</h1>
-                <span class="text-4xl">🥗</span>
             </div>
             <p class="text-slate-500 text-lg">Your unified diet + workout companion</p>
 
@@ -111,7 +135,7 @@
                     </div>
                 </div>
 
-                <div class="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-2 rounded-full shadow-lg shadow-emerald-500/30 flex items-center gap-2 cursor-pointer" onclick="openWeightModal()">
+                <div class="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-4 py-2 rounded-full shadow-lg shadow-emerald-500/30 flex items-center gap-2 cursor-pointer edit-only" onclick="openWeightModal()">
                     <span>⚖️</span>
                     <div class="text-left">
                         <div class="text-xs opacity-80">Current</div>
@@ -119,9 +143,15 @@
                     </div>
                 </div>
 
-                <button onclick="openGoalsModal()" class="bg-white px-4 py-2 rounded-full shadow-sm flex items-center gap-2 hover:bg-slate-50 transition-all">
+                <button onclick="openGoalsModal()" class="bg-white px-4 py-2 rounded-full shadow-sm flex items-center gap-2 hover:bg-slate-50 transition-all edit-only">
                     <span>⚙️</span>
                     <span class="text-sm font-medium text-slate-600">Goals</span>
+                </button>
+
+                <!-- Edit Mode Toggle -->
+                <button id="editModeToggle" onclick="toggleEditMode()" class="px-4 py-2 rounded-full shadow-sm flex items-center gap-2 transition-all">
+                    <span id="editModeIcon">🔒</span>
+                    <span class="text-sm font-medium" id="editModeText">View Only</span>
                 </button>
             </div>
         </header>
@@ -158,84 +188,107 @@
         <div class="bg-white rounded-3xl p-5 shadow-sm mb-6" id="macroWidget">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="font-display text-lg font-semibold text-slate-800">📊 Today's Progress</h2>
-                <div class="text-sm font-medium">
-                    <span class="text-rose-500" id="totalCalories">0</span>
-                    <span class="text-slate-400">/</span>
-                    <span class="text-slate-600" id="goalCalories">1300</span>
-                    <span class="text-slate-400">kcal</span>
+                <div class="flex items-center gap-4">
+                    <div class="text-sm font-medium text-orange-500" id="caloriesBurnt" title="Calories burnt from workout">
+                        🔥 <span id="burntCalories">0</span> burnt
+                    </div>
+                    <div class="text-sm font-medium">
+                        <span class="text-rose-500" id="totalCalories">0</span>
+                        <span class="text-slate-400">/</span>
+                        <span class="text-slate-600" id="goalCalories">1300</span>
+                        <span class="text-slate-400">kcal</span>
+                    </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-3 md:grid-cols-5 gap-3">
                 <!-- Protein -->
                 <div class="text-center">
                     <div class="relative inline-block">
-                        <svg class="w-20 h-20 transform -rotate-90">
-                            <circle cx="40" cy="40" r="35" stroke="#f1f5f9" stroke-width="6" fill="none"/>
-                            <circle id="proteinRing" cx="40" cy="40" r="35" stroke="#f59e0b" stroke-width="6" fill="none"
+                        <svg class="w-16 h-16 md:w-20 md:h-20 transform -rotate-90">
+                            <circle cx="50%" cy="50%" r="35%" stroke="#f1f5f9" stroke-width="6" fill="none"/>
+                            <circle id="proteinRing" cx="50%" cy="50%" r="35%" stroke="#f59e0b" stroke-width="6" fill="none"
                                     stroke-dasharray="220" stroke-dashoffset="220" stroke-linecap="round" class="macro-ring"/>
                         </svg>
                         <div class="absolute inset-0 flex items-center justify-center">
-                            <span class="text-2xl">🥩</span>
+                            <span class="text-xl md:text-2xl">🥩</span>
                         </div>
                     </div>
                     <div class="mt-1">
-                        <div class="font-bold text-amber-600"><span id="proteinCurrent">0</span>g</div>
-                        <div class="text-xs text-slate-400">Protein / <span id="proteinGoal">80</span>g</div>
+                        <div class="font-bold text-amber-600 text-sm"><span id="proteinCurrent">0</span>g</div>
+                        <div class="text-xs text-slate-400">/ <span id="proteinGoal">80</span>g</div>
                     </div>
                 </div>
 
                 <!-- Carbs -->
                 <div class="text-center">
                     <div class="relative inline-block">
-                        <svg class="w-20 h-20 transform -rotate-90">
-                            <circle cx="40" cy="40" r="35" stroke="#f1f5f9" stroke-width="6" fill="none"/>
-                            <circle id="carbsRing" cx="40" cy="40" r="35" stroke="#3b82f6" stroke-width="6" fill="none"
+                        <svg class="w-16 h-16 md:w-20 md:h-20 transform -rotate-90">
+                            <circle cx="50%" cy="50%" r="35%" stroke="#f1f5f9" stroke-width="6" fill="none"/>
+                            <circle id="carbsRing" cx="50%" cy="50%" r="35%" stroke="#3b82f6" stroke-width="6" fill="none"
                                     stroke-dasharray="220" stroke-dashoffset="220" stroke-linecap="round" class="macro-ring"/>
                         </svg>
                         <div class="absolute inset-0 flex items-center justify-center">
-                            <span class="text-2xl">🍚</span>
+                            <span class="text-xl md:text-2xl">🍚</span>
                         </div>
                     </div>
                     <div class="mt-1">
-                        <div class="font-bold text-blue-600"><span id="carbsCurrent">0</span>g</div>
-                        <div class="text-xs text-slate-400">Carbs / <span id="carbsGoal">180</span>g</div>
+                        <div class="font-bold text-blue-600 text-sm"><span id="carbsCurrent">0</span>g</div>
+                        <div class="text-xs text-slate-400">/ <span id="carbsGoal">180</span>g</div>
                     </div>
                 </div>
 
                 <!-- Fat -->
                 <div class="text-center">
                     <div class="relative inline-block">
-                        <svg class="w-20 h-20 transform -rotate-90">
-                            <circle cx="40" cy="40" r="35" stroke="#f1f5f9" stroke-width="6" fill="none"/>
-                            <circle id="fatRing" cx="40" cy="40" r="35" stroke="#ec4899" stroke-width="6" fill="none"
+                        <svg class="w-16 h-16 md:w-20 md:h-20 transform -rotate-90">
+                            <circle cx="50%" cy="50%" r="35%" stroke="#f1f5f9" stroke-width="6" fill="none"/>
+                            <circle id="fatRing" cx="50%" cy="50%" r="35%" stroke="#ec4899" stroke-width="6" fill="none"
                                     stroke-dasharray="220" stroke-dashoffset="220" stroke-linecap="round" class="macro-ring"/>
                         </svg>
                         <div class="absolute inset-0 flex items-center justify-center">
-                            <span class="text-2xl">🧈</span>
+                            <span class="text-xl md:text-2xl">🧈</span>
                         </div>
                     </div>
                     <div class="mt-1">
-                        <div class="font-bold text-pink-500"><span id="fatCurrent">0</span>g</div>
-                        <div class="text-xs text-slate-400">Fat / <span id="fatGoal">45</span>g</div>
+                        <div class="font-bold text-pink-500 text-sm"><span id="fatCurrent">0</span>g</div>
+                        <div class="text-xs text-slate-400">/ <span id="fatGoal">45</span>g</div>
                     </div>
                 </div>
 
                 <!-- Fiber -->
                 <div class="text-center">
                     <div class="relative inline-block">
-                        <svg class="w-20 h-20 transform -rotate-90">
-                            <circle cx="40" cy="40" r="35" stroke="#f1f5f9" stroke-width="6" fill="none"/>
-                            <circle id="fiberRing" cx="40" cy="40" r="35" stroke="#10b981" stroke-width="6" fill="none"
+                        <svg class="w-16 h-16 md:w-20 md:h-20 transform -rotate-90">
+                            <circle cx="50%" cy="50%" r="35%" stroke="#f1f5f9" stroke-width="6" fill="none"/>
+                            <circle id="fiberRing" cx="50%" cy="50%" r="35%" stroke="#10b981" stroke-width="6" fill="none"
                                     stroke-dasharray="220" stroke-dashoffset="220" stroke-linecap="round" class="macro-ring"/>
                         </svg>
                         <div class="absolute inset-0 flex items-center justify-center">
-                            <span class="text-2xl">🥬</span>
+                            <span class="text-xl md:text-2xl">🥬</span>
                         </div>
                     </div>
                     <div class="mt-1">
-                        <div class="font-bold text-emerald-500"><span id="fiberCurrent">0</span>g</div>
-                        <div class="text-xs text-slate-400">Fiber / <span id="fiberGoal">25</span>g</div>
+                        <div class="font-bold text-emerald-500 text-sm"><span id="fiberCurrent">0</span>g</div>
+                        <div class="text-xs text-slate-400">/ <span id="fiberGoal">25</span>g</div>
+                    </div>
+                </div>
+
+                <!-- Water -->
+                <div class="text-center">
+                    <div class="relative inline-block">
+                        <svg class="w-16 h-16 md:w-20 md:h-20 transform -rotate-90">
+                            <circle cx="50%" cy="50%" r="35%" stroke="#f1f5f9" stroke-width="6" fill="none"/>
+                            <circle id="waterRing" cx="50%" cy="50%" r="35%" stroke="#06b6d4" stroke-width="6" fill="none"
+                                    stroke-dasharray="220" stroke-dashoffset="220" stroke-linecap="round" class="macro-ring"/>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span class="text-xl md:text-2xl">💧</span>
+                        </div>
+                    </div>
+                    <div class="mt-1">
+                        <div class="font-bold text-cyan-600 text-sm"><span id="waterCurrentMl">0</span>ml</div>
+                        <div class="text-xs text-slate-400">/ 2000ml</div>
                     </div>
                 </div>
             </div>
@@ -249,6 +302,17 @@
                     <span>0</span>
                     <span id="caloriePercent">0% of daily goal</span>
                     <span id="goalCaloriesLabel">1300</span>
+                </div>
+            </div>
+
+            <!-- Macro Advisor -->
+            <div id="macroAdvisorSection" class="mt-4 pt-4 border-t border-slate-100">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-base">🧠</span>
+                    <span class="font-semibold text-slate-700 text-sm">Macro Advisor</span>
+                </div>
+                <div id="macroAdvisorContent" class="text-sm text-slate-600">
+                    <!-- Populated by JS -->
                 </div>
             </div>
         </div>
@@ -274,9 +338,43 @@
             </div>
         </div>
 
+        <!-- Water Tracker - Simple +/- buttons -->
+        <div class="bg-gradient-to-r from-cyan-50 to-blue-50 rounded-2xl p-4 shadow-sm mb-6 border border-cyan-100" id="waterTrackerSection">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">💧</span>
+                    <div>
+                        <div class="font-semibold text-slate-800">Water Intake</div>
+                        <div class="text-xs text-slate-500">Track your hydration</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="adjustWater(-1)" class="w-10 h-10 rounded-full bg-white shadow-sm border border-slate-200 text-slate-600 hover:bg-red-50 hover:border-red-200 hover:text-red-500 transition-all font-bold text-xl flex items-center justify-center edit-only">
+                        −
+                    </button>
+                    <div class="text-center min-w-[80px]">
+                        <div class="text-2xl font-bold text-cyan-600" id="waterDisplay">0</div>
+                        <div class="text-xs text-slate-400">/ 2000 ml</div>
+                    </div>
+                    <button onclick="adjustWater(1)" class="w-10 h-10 rounded-full bg-white shadow-sm border border-slate-200 text-slate-600 hover:bg-green-50 hover:border-green-200 hover:text-green-500 transition-all font-bold text-xl flex items-center justify-center edit-only">
+                        +
+                    </button>
+                </div>
+            </div>
+            <div class="mt-3">
+                <div class="h-2 bg-white rounded-full overflow-hidden">
+                    <div id="waterProgressBar" class="h-full bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <div class="text-xs text-slate-400 text-center mt-1">Each tap = 250ml (1 glass)</div>
+            </div>
+        </div>
+
         <!-- Main Content Tabs -->
         <div class="flex gap-2 mb-4 justify-center">
-            <button onclick="switchTab('diet')" class="tab-btn px-6 py-2.5 rounded-xl font-semibold text-sm transition-all tab-active" data-tab="diet">
+            <button onclick="switchTab('progress')" class="tab-btn px-6 py-2.5 rounded-xl font-semibold text-sm transition-all tab-active" data-tab="progress">
+                📊 Progress
+            </button>
+            <button onclick="switchTab('diet')" class="tab-btn px-6 py-2.5 rounded-xl font-semibold text-sm transition-all bg-white text-slate-600 hover:bg-slate-50" data-tab="diet">
                 🥗 Diet
             </button>
             <button onclick="switchTab('workout')" class="tab-btn px-6 py-2.5 rounded-xl font-semibold text-sm transition-all bg-white text-slate-600 hover:bg-slate-50" data-tab="workout">
@@ -291,7 +389,6 @@
 
         <!-- Footer -->
         <footer class="text-center mt-8 text-slate-400 text-sm">
-            <p>Use ← → arrow keys to navigate days • Data synced with Google Sheets</p>
         </footer>
     </div>
 
@@ -713,20 +810,325 @@
         </div>
     </div>
 
+    <!-- Password Modal (Edit Mode) -->
+    <div id="passwordModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
+            <h3 class="font-display text-xl font-semibold text-slate-800 mb-2">🔐 Enter Edit Password</h3>
+            <p class="text-slate-500 text-sm mb-4">Enter the password to unlock editing mode</p>
+            <form onsubmit="event.preventDefault(); verifyEditPassword();">
+                <div class="mb-4">
+                    <input type="password" id="editPasswordInput" autocomplete="current-password"
+                           class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="Password">
+                </div>
+                <p id="passwordError" class="text-red-500 text-sm mb-3 hidden">Incorrect password. Please try again.</p>
+                <div class="flex gap-3">
+                    <button type="button" onclick="closePasswordModal()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-semibold transition-all">Cancel</button>
+                    <button type="submit" class="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/30">Unlock</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div id="changePasswordModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
+            <h3 class="font-display text-xl font-semibold text-slate-800 mb-2">🔑 Change Password</h3>
+            <p class="text-slate-500 text-sm mb-4">Update your edit mode password</p>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-sm text-slate-500 mb-1">Current Password</label>
+                    <input type="password" id="currentPasswordInput"
+                           class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="Enter current password">
+                </div>
+                <div>
+                    <label class="block text-sm text-slate-500 mb-1">New Password</label>
+                    <input type="password" id="newPasswordInput"
+                           class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="Enter new password">
+                </div>
+                <div>
+                    <label class="block text-sm text-slate-500 mb-1">Confirm New Password</label>
+                    <input type="password" id="confirmPasswordInput"
+                           class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="Confirm new password">
+                </div>
+            </div>
+            <p id="changePasswordError" class="text-red-500 text-sm mt-3 hidden">Error message</p>
+            <p id="changePasswordSuccess" class="text-green-500 text-sm mt-3 hidden">Password changed successfully!</p>
+            <div class="flex gap-3 mt-4">
+                <button onclick="closeChangePasswordModal()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-semibold transition-all">Cancel</button>
+                <button onclick="changePassword()" class="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/30">Update</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Workout Editor Modal -->
+    <div id="workoutEditorModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-2xl shadow-2xl my-4">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-display text-xl font-semibold text-slate-800" id="workoutEditorTitle">✏️ Edit Workout</h3>
+                <button onclick="closeWorkoutEditor()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- Exercise List -->
+            <div id="exerciseEditorList" class="space-y-2 max-h-96 overflow-y-auto mb-4">
+                <!-- Exercises will be rendered here -->
+            </div>
+
+            <!-- Add Exercise Buttons -->
+            <div class="flex gap-3 mb-4">
+                <button onclick="addNewExercise()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-semibold transition-all flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    Add Custom
+                </button>
+                <button onclick="openExerciseLibrary()" class="flex-1 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                    Browse Library
+                </button>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="closeWorkoutEditor()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-semibold transition-all">Cancel</button>
+                <button onclick="saveWorkoutChanges()" class="flex-1 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-orange-500/30">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exercise Edit Modal -->
+    <div id="exerciseEditModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
+            <h3 class="font-display text-xl font-semibold text-slate-800 mb-4" id="exerciseEditTitle">Edit Exercise</h3>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-sm text-slate-500 mb-1">Exercise Name *</label>
+                    <input type="text" id="exerciseNameInput"
+                           class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                           placeholder="e.g., Push-ups">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm text-slate-500 mb-1">Sets</label>
+                        <input type="text" id="exerciseSetsInput"
+                               class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                               placeholder="3">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-500 mb-1">Reps</label>
+                        <input type="text" id="exerciseRepsInput"
+                               class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                               placeholder="10-15">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm text-slate-500 mb-1">Rest</label>
+                        <input type="text" id="exerciseRestInput"
+                               class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                               placeholder="30s">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-500 mb-1">Calories</label>
+                        <input type="number" id="exerciseCaloriesInput"
+                               class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                               placeholder="50">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm text-slate-500 mb-1">Notes</label>
+                    <textarea id="exerciseNotesInput" rows="2"
+                              class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+                              placeholder="Tips or instructions"></textarea>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="exerciseIsChallengeInput" class="w-4 h-4 accent-orange-500">
+                        <span class="text-sm text-slate-600">Challenge Exercise</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="exerciseIsRestInput" class="w-4 h-4 accent-orange-500">
+                        <span class="text-sm text-slate-600">Rest Period</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="exerciseIsOptionalInput" class="w-4 h-4 accent-orange-500">
+                        <span class="text-sm text-slate-600">Optional</span>
+                    </label>
+                </div>
+                <div id="prTypeSection" class="hidden">
+                    <label class="block text-sm text-slate-500 mb-1">PR Type</label>
+                    <select id="exercisePrTypeInput"
+                            class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="time">Time (seconds)</option>
+                        <option value="reps">Reps</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex gap-3 mt-6">
+                <button onclick="closeExerciseEditModal()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-semibold transition-all">Cancel</button>
+                <button onclick="saveExerciseEdit()" class="flex-1 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-orange-500/30">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exercise Library Browser Modal -->
+    <div id="exerciseLibraryModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-2xl shadow-2xl my-4">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-display text-xl font-semibold text-slate-800">Exercise Library</h3>
+                <button onclick="closeExerciseLibrary()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- Search and Filter -->
+            <div class="flex gap-3 mb-4">
+                <div class="flex-1 relative">
+                    <input type="text" id="librarySearchInput"
+                           class="w-full px-4 py-3 pl-10 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="Search exercises..."
+                           oninput="searchExerciseLibrary()">
+                    <svg class="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+                <select id="libraryCategoryFilter"
+                        class="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onchange="filterExerciseLibrary()">
+                    <option value="all">All Categories</option>
+                </select>
+            </div>
+
+            <!-- Exercise List -->
+            <div id="exerciseLibraryList" class="space-y-2 max-h-96 overflow-y-auto">
+                <div class="text-center py-8 text-slate-400">
+                    <p>Loading exercises...</p>
+                </div>
+            </div>
+
+            <div class="flex gap-3 mt-4">
+                <button onclick="closeExerciseLibrary()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-semibold transition-all">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exercise Detail Modal -->
+    <div id="exerciseDetailModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70] hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
+            <h3 class="font-display text-xl font-semibold text-slate-800 mb-2" id="exerciseDetailName">Exercise Name</h3>
+            <div class="flex flex-wrap gap-2 mb-4">
+                <span id="exerciseDetailCategory" class="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded-full">Category</span>
+                <span id="exerciseDetailDifficulty" class="text-xs px-2 py-1 bg-purple-100 text-purple-600 rounded-full">Difficulty</span>
+                <span id="exerciseDetailType" class="text-xs px-2 py-1 bg-green-100 text-green-600 rounded-full">Type</span>
+            </div>
+
+            <div class="space-y-3 mb-4">
+                <div class="bg-slate-50 rounded-xl p-3">
+                    <p class="text-xs text-slate-500 mb-1">Target Muscles</p>
+                    <p class="text-sm font-medium text-slate-700" id="exerciseDetailMuscles">Primary muscles</p>
+                    <p class="text-xs text-slate-500" id="exerciseDetailSecondary">Secondary muscles</p>
+                </div>
+                <div class="bg-slate-50 rounded-xl p-3">
+                    <p class="text-xs text-slate-500 mb-1">Equipment</p>
+                    <p class="text-sm font-medium text-slate-700" id="exerciseDetailEquipment">Equipment</p>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="bg-orange-50 rounded-xl p-3 text-center">
+                        <p class="text-xs text-orange-500 mb-1">Sets</p>
+                        <p class="text-lg font-bold text-orange-600" id="exerciseDetailSets">3</p>
+                    </div>
+                    <div class="bg-blue-50 rounded-xl p-3 text-center">
+                        <p class="text-xs text-blue-500 mb-1">Reps</p>
+                        <p class="text-lg font-bold text-blue-600" id="exerciseDetailReps">10-12</p>
+                    </div>
+                    <div class="bg-green-50 rounded-xl p-3 text-center">
+                        <p class="text-xs text-green-500 mb-1">Rest</p>
+                        <p class="text-lg font-bold text-green-600" id="exerciseDetailRest">60s</p>
+                    </div>
+                </div>
+                <div class="bg-slate-50 rounded-xl p-3">
+                    <p class="text-xs text-slate-500 mb-1">Instructions</p>
+                    <p class="text-sm text-slate-700" id="exerciseDetailInstructions">Instructions here</p>
+                </div>
+                <div class="bg-amber-50 rounded-xl p-3">
+                    <p class="text-xs text-amber-500 mb-1">Tips</p>
+                    <p class="text-sm text-amber-700" id="exerciseDetailTips">Tips here</p>
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="closeExerciseDetail()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-semibold transition-all">Back</button>
+                <button onclick="addExerciseFromLibrary()" class="flex-1 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-green-500/30">Add to Workout</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ==================== CONFIGURATION ====================
-        // MySQL Backend API URL (Bluehost) - Much faster than Google Apps Script!
-        // Update this to your Bluehost domain after deployment
+        // MySQL Backend API URL
         const API_URL = 'https://codesoft.co.in/fitlife/api.php';
 
-        // Fallback to Google Apps Script if needed (slower)
-        // const API_URL = 'https://script.google.com/macros/s/AKfycbyNbnx3PaUbh8xWoXTdQOXTTCBORFaYFDeXXl3geMrbsIliP21NowS1L_WsQoaOQEgF/exec';
+        // ==================== TOAST NOTIFICATIONS ====================
+        function showToast(message, type = 'info') {
+            // Remove existing toast if any
+            const existingToast = document.getElementById('toastNotification');
+            if (existingToast) {
+                existingToast.remove();
+            }
+
+            // Color schemes for different types
+            const colors = {
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                info: 'bg-blue-500',
+                warning: 'bg-yellow-500'
+            };
+
+            const toast = document.createElement('div');
+            toast.id = 'toastNotification';
+            toast.className = `fixed bottom-20 left-1/2 -translate-x-1/2 ${colors[type] || colors.info} text-white px-6 py-3 rounded-xl shadow-lg z-[100] transition-all duration-300 opacity-0 transform translate-y-4`;
+            toast.textContent = message;
+
+            document.body.appendChild(toast);
+
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.classList.remove('opacity-0', 'translate-y-4');
+            });
+
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-4');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
 
         // ==================== STATE ====================
         let selectedDate = new Date().toISOString().split('T')[0];
         let currentWeekStart = getMonday(new Date());
         let currentDayIndex = (new Date().getDay() + 6) % 7; // 0=Mon, 6=Sun
-        let currentTab = 'diet';
+        let currentTab = 'progress';
+
+        // Edit Mode State
+        let isEditMode = localStorage.getItem('fitlife_edit_mode') === 'true';
+        // Use sessionStorage for edit token (cleared on browser close) for better security
+        // Also check expiration (4 hours max)
+        let editToken = null;
+        const storedToken = sessionStorage.getItem('fitlife_edit_token');
+        const tokenExpiry = sessionStorage.getItem('fitlife_edit_token_expiry');
+        if (storedToken && tokenExpiry && Date.now() < parseInt(tokenExpiry)) {
+            editToken = storedToken;
+        } else {
+            // Clear expired token
+            sessionStorage.removeItem('fitlife_edit_token');
+            sessionStorage.removeItem('fitlife_edit_token_expiry');
+        }
+
+        // Database-backed workout data (loaded from server)
+        let dbWorkoutSchedule = null;
+        let dbWorkoutDetails = null;
 
         // Get Monday of a given week
         function getMonday(date) {
@@ -1029,23 +1431,30 @@
 
         let goals = { calories: 1450, protein: 105, carbs: 140, fat: 50, fiber: 28, targetWeight: 65 };
         let dailyTotals = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
-        let dailyMeals = { breakfast: [], lunch: [], dinner: [], snacks: [], postworkout: [] };
+        let dailyMeals = { breakfast: [], lunch: [], dinner: [], snacks: [], preworkout: [], postworkout: [] };
         let weightHistory = [];
         let isOffline = false;
+        let pendingSyncs = JSON.parse(localStorage.getItem('fitlife_pending_syncs')) || [];
 
-        // Exercise tracking state
-        let exerciseChecks = JSON.parse(localStorage.getItem('fitlife_exercises')) || {};
-        let prLog = JSON.parse(localStorage.getItem('fitlife_prs')) || {};
+        // Exercise tracking state - initialized empty, loaded from database
+        let exerciseChecks = {};
+        let prLog = {};
+        // Daily PR attempts (stores today's logged time/reps for each exercise, keyed by date-exerciseName)
+        let dailyPrAttempts = JSON.parse(localStorage.getItem('fitlife_daily_pr_attempts')) || {};
         let currentPrExercise = null;
 
-        // Day type state (normal, light, cheat)
-        let dayTypes = JSON.parse(localStorage.getItem('fitlife_day_types')) || {};
+        // Day type state (normal, light, cheat) - initialized empty, loaded from database
+        let dayTypes = {};
 
         function setDayType(type) {
+            if (!isEditMode) {
+                showToast('Unlock edit mode to change day type', 'info');
+                return;
+            }
             dayTypes[selectedDate] = type;
             localStorage.setItem('fitlife_day_types', JSON.stringify(dayTypes));
 
-            // Sync to Google Sheets
+            // Sync to database
             apiPost('setDayType', { date: selectedDate, type: type });
 
             // Update UI
@@ -1062,86 +1471,208 @@
             return labels[type] || 'Normal';
         }
 
-        // Workout Schedule
-        const workoutSchedule = {
-            0: { type: 'push', name: 'Push + Core', emoji: '💪', color: 'orange' },
-            1: { type: 'pull', name: 'Pull', emoji: '🏋️', color: 'blue' },
-            2: { type: 'rest', name: 'Rest', emoji: '😴', color: 'gray' },
-            3: { type: 'legs', name: 'Legs', emoji: '🦵', color: 'purple' },
-            4: { type: 'upper', name: 'Upper Var.', emoji: '🔄', color: 'teal' },
-            5: { type: 'rest', name: 'Rest', emoji: '😴', color: 'gray' },
-            6: { type: 'rest', name: 'Rest', emoji: '😴', color: 'gray' }
+        // Weekly Workout Schedule - Mon-Fri workouts, Sat-Sun rest
+        // Index 0 = Monday, 6 = Sunday
+        const weeklyWorkoutSchedule = {
+            0: { type: 'push', name: 'Push + Core', emoji: '💪', color: 'orange' },    // Monday
+            1: { type: 'pull', name: 'Pull', emoji: '🏋️', color: 'blue' },             // Tuesday
+            2: { type: 'legs', name: 'Legs', emoji: '🦵', color: 'purple' },           // Wednesday
+            3: { type: 'upper', name: 'Upper Var.', emoji: '🔄', color: 'teal' },      // Thursday
+            4: { type: 'cardio', name: 'Light Cardio', emoji: '🏃', color: 'green' },  // Friday
+            5: { type: 'rest', name: 'Rest', emoji: '😴', color: 'gray' },             // Saturday
+            6: { type: 'rest', name: 'Rest', emoji: '😴', color: 'gray' }              // Sunday
         };
 
+        // Get workout for any date based on day of week
+        function getWorkoutForDate(dateStr) {
+            const date = new Date(dateStr + 'T00:00:00');
+            const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+            // Convert JS day (0=Sun) to our schedule (0=Mon)
+            const scheduleIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+            return weeklyWorkoutSchedule[scheduleIndex];
+        }
+
+        // Legacy compatibility - generates workoutSchedule for current week view
+        function getWorkoutSchedule() {
+            const schedule = {};
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(currentWeekStart);
+                date.setDate(date.getDate() + i);
+                const dateKey = date.toISOString().split('T')[0];
+                schedule[i] = getWorkoutForDate(dateKey);
+            }
+            return schedule;
+        }
+        const workoutSchedule = getWorkoutSchedule();
+
         // Workout Details (with PR tracking for challenges)
-        const workoutDetails = {
+        // Using let so it can be updated from database
+        let workoutDetails = {
             push: {
                 title: 'Push + Core Day',
                 subtitle: 'Chest, Shoulders, Triceps + Core',
                 color: 'orange',
+                totalCalories: 250, // Approx calories for full workout
                 exercises: [
-                    { name: 'Push-ups', sets: '100 total', reps: 'For time', rest: '—', notes: 'Your challenge — beat the clock!', isChallenge: true, prType: 'time', prUnit: 'seconds' },
-                    { name: 'Rest & Recover', sets: '—', reps: '3-5 min', rest: '—', notes: 'Let heart rate settle', isRest: true },
-                    { name: 'Plank', sets: '3', reps: '30-45s', rest: '30s', notes: 'Core — keep body straight' },
-                    { name: 'Dead Bug', sets: '3', reps: '10 each side', rest: '30s', notes: 'Core stability — slow & controlled' },
-                    { name: 'Mountain Climbers', sets: '3', reps: '20 reps', rest: '30s', notes: 'Core + cardio finish' }
+                    { name: 'Push-ups', sets: '100 total', reps: 'For time', rest: '—', notes: 'Your challenge — beat the clock!', isChallenge: true, prType: 'time', prUnit: 'seconds', calories: 100 },
+                    { name: 'Rest & Recover', sets: '—', reps: '3-5 min', rest: '—', notes: 'Let heart rate settle', isRest: true, calories: 0 },
+                    { name: 'Plank', sets: '3', reps: '30-45s', rest: '30s', notes: 'Core — keep body straight', calories: 40 },
+                    { name: 'Dead Bug', sets: '3', reps: '10 each side', rest: '30s', notes: 'Core stability — slow & controlled', calories: 35 },
+                    { name: 'Mountain Climbers', sets: '3', reps: '20 reps', rest: '30s', notes: 'Core + cardio finish', calories: 75 }
                 ]
             },
             pull: {
                 title: 'Pull Day',
                 subtitle: 'Back, Biceps, Rear Delts',
                 color: 'blue',
+                totalCalories: 220,
                 exercises: [
-                    { name: 'Pull-ups', sets: '30 total', reps: 'For time', rest: '—', notes: 'Your challenge — beat the clock!', isChallenge: true, prType: 'time', prUnit: 'seconds' },
-                    { name: 'Rest & Recover', sets: '—', reps: '2-3 min', rest: '—', notes: 'Shake out arms', isRest: true },
-                    { name: 'Australian Rows', sets: '3', reps: '12-15', rest: '45s', notes: 'Under table — pull chest to edge' },
-                    { name: 'Doorframe Rows', sets: '3', reps: '10-12', rest: '45s', notes: 'Hold frame, lean back, pull' },
-                    { name: 'Bicep Curls', sets: '3', reps: '15', rest: '30s', notes: 'Water bottles or loaded bags' },
-                    { name: 'Superman Hold', sets: '3', reps: '20s', rest: '30s', notes: 'Lower back — squeeze glutes' }
+                    { name: 'Pull-ups', sets: '30 total', reps: 'For time', rest: '—', notes: 'Your challenge — beat the clock!', isChallenge: true, prType: 'time', prUnit: 'seconds', calories: 80 },
+                    { name: 'Rest & Recover', sets: '—', reps: '2-3 min', rest: '—', notes: 'Shake out arms', isRest: true, calories: 0 },
+                    { name: 'Seated Band Rows', sets: '3', reps: '15-20', rest: '45s', notes: 'Sit on floor, loop band around feet, pull to belly', calories: 35 },
+                    { name: 'Bent-Over Band Rows', sets: '3', reps: '12-15', rest: '45s', notes: 'Stand on band, hinge forward, row to chest', calories: 40 },
+                    { name: 'Band Face Pulls', sets: '3', reps: '15-20', rest: '30s', notes: 'Pull band to face level, squeeze rear delts', calories: 30 },
+                    { name: 'Band Bicep Curls', sets: '3', reps: '15', rest: '30s', notes: 'Stand on band, curl with control', calories: 25 },
+                    { name: 'Superman Hold', sets: '3', reps: '20s', rest: '30s', notes: 'Lower back — squeeze glutes', calories: 35 }
                 ]
             },
             legs: {
                 title: 'Legs Day',
                 subtitle: 'Quads, Glutes, Hamstrings, Calves',
                 color: 'purple',
+                totalCalories: 300,
                 exercises: [
-                    { name: 'Squats', sets: 'Max reps', reps: 'in 60s', rest: '—', notes: 'Your challenge — beat the count!', isChallenge: true, prType: 'reps', prUnit: 'reps' },
-                    { name: 'Jump Squats', sets: '3', reps: '20', rest: '45s', notes: 'Explosive — land soft' },
-                    { name: 'Lunges', sets: '3', reps: '10 each leg', rest: '45s', notes: 'Keep torso upright' },
-                    { name: 'Hip Thrusts', sets: '3', reps: '20', rest: '45s', notes: 'Squeeze glutes at top' },
-                    { name: 'Single-Leg RDL', sets: '3', reps: '10 each', rest: '45s', notes: 'Hamstring focus — balance' },
-                    { name: 'Calf Raises', sets: '3', reps: '20', rest: '30s', notes: 'Slow, full range of motion' }
+                    { name: 'Squats', sets: 'Max reps', reps: 'in 60s', rest: '—', notes: 'Your challenge — beat the count!', isChallenge: true, prType: 'reps', prUnit: 'reps', calories: 60 },
+                    { name: 'Jump Squats', sets: '3', reps: '20', rest: '45s', notes: 'Explosive — land soft', calories: 70 },
+                    { name: 'Lunges', sets: '3', reps: '10 each leg', rest: '45s', notes: 'Keep torso upright', calories: 50 },
+                    { name: 'Hip Thrusts', sets: '3', reps: '20', rest: '45s', notes: 'Squeeze glutes at top', calories: 40 },
+                    { name: 'Single-Leg RDL', sets: '3', reps: '10 each', rest: '45s', notes: 'Hamstring focus — balance', calories: 40 },
+                    { name: 'Calf Raises', sets: '3', reps: '20', rest: '30s', notes: 'Slow, full range of motion', calories: 40 }
                 ]
             },
             upper: {
                 title: 'Upper Body Variations',
                 subtitle: 'Light/Moderate — Build Capacity',
                 color: 'teal',
+                totalCalories: 180,
                 exercises: [
-                    { name: 'Pike Push-ups', sets: '3', reps: '8-12', rest: '60s', notes: 'Shoulders — stop 2-3 reps before failure' },
-                    { name: 'Diamond Push-ups', sets: '3', reps: '10-15', rest: '60s', notes: 'Triceps — NOT to failure' },
-                    { name: 'Wide Push-ups', sets: '2', reps: '15', rest: '45s', notes: 'Chest stretch — easy effort' },
-                    { name: 'Tricep Dips', sets: '3', reps: '12', rest: '45s', notes: 'Chair dips — control the descent' },
-                    { name: 'Shoulder Taps', sets: '3', reps: '10 each', rest: '30s', notes: 'Plank position — minimize hip sway' }
+                    { name: 'Pike Push-ups', sets: '3', reps: '8-12', rest: '60s', notes: 'Shoulders — stop 2-3 reps before failure', calories: 40 },
+                    { name: 'Diamond Push-ups', sets: '3', reps: '10-15', rest: '60s', notes: 'Triceps — NOT to failure', calories: 40 },
+                    { name: 'Wide Push-ups', sets: '2', reps: '15', rest: '45s', notes: 'Chest stretch — easy effort', calories: 30 },
+                    { name: 'Tricep Dips', sets: '3', reps: '12', rest: '45s', notes: 'Chair dips — control the descent', calories: 40 },
+                    { name: 'Shoulder Taps', sets: '3', reps: '10 each', rest: '30s', notes: 'Plank position — minimize hip sway', calories: 30 }
                 ]
             },
             rest: {
                 title: 'Rest Day',
                 subtitle: 'Recovery & Light Activity',
                 color: 'gray',
+                totalCalories: 100,
                 exercises: [
-                    { name: 'Light Walking', sets: '—', reps: '15-20 min', rest: '—', notes: 'Optional — active recovery', isOptional: true },
-                    { name: 'Stretching', sets: '—', reps: '10 min', rest: '—', notes: 'Focus on tight areas', isOptional: true },
-                    { name: 'Foam Rolling', sets: '—', reps: '5-10 min', rest: '—', notes: 'If available', isOptional: true }
+                    { name: 'Light Walking', sets: '—', reps: '15-20 min', rest: '—', notes: 'Optional — active recovery', isOptional: true, calories: 60 },
+                    { name: 'Stretching', sets: '—', reps: '10 min', rest: '—', notes: 'Focus on tight areas', isOptional: true, calories: 25 },
+                    { name: 'Foam Rolling', sets: '—', reps: '5-10 min', rest: '—', notes: 'If available', isOptional: true, calories: 15 }
+                ]
+            },
+            cardio: {
+                title: 'Light Cardio Day',
+                subtitle: 'Walking, Skipping & Active Recovery',
+                color: 'green',
+                totalCalories: 200,
+                exercises: [
+                    { name: 'Brisk Walking', sets: '—', reps: '20-30 min', rest: '—', notes: 'Outdoor walk — keep good pace', calories: 100 },
+                    { name: 'Jump Rope / Skipping', sets: '3', reps: '2-3 min', rest: '1 min', notes: 'Light effort — don\'t push hard', calories: 60 },
+                    { name: 'Stretching', sets: '—', reps: '10 min', rest: '—', notes: 'Focus on legs and hips', calories: 25 },
+                    { name: 'Deep Breathing', sets: '—', reps: '5 min', rest: '—', notes: 'Relax & recover', isOptional: true, calories: 15 }
                 ]
             }
         };
+
+        // Load workout data from database and update workoutDetails
+        async function loadWorkoutData() {
+            try {
+                const result = await apiPost('getAllWorkouts', {});
+                if (result.success && result.workoutDetails) {
+                    // Update each workout type with data from database
+                    for (const [type, data] of Object.entries(result.workoutDetails)) {
+                        if (workoutDetails[type]) {
+                            // Map database format to frontend format
+                            workoutDetails[type].exercises = data.exercises.map(ex => ({
+                                name: ex.name,
+                                sets: ex.sets,
+                                reps: ex.reps,
+                                rest: ex.rest,
+                                notes: ex.notes,
+                                calories: ex.calories || 0,
+                                isChallenge: ex.isChallenge,
+                                prType: ex.prType,
+                                prUnit: ex.prUnit,
+                                isRest: ex.isRest,
+                                isOptional: ex.isOptional
+                            }));
+                            workoutDetails[type].totalCalories = data.totalCalories || 0;
+                        }
+                    }
+                    console.log('Workout data loaded from database');
+                }
+            } catch (error) {
+                console.error('Error loading workout data:', error);
+                // Keep using default hardcoded data on error
+            }
+        }
+
+        // XSS Prevention - Escape HTML entities in user data
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            const div = document.createElement('div');
+            div.textContent = String(str);
+            return div.innerHTML;
+        }
 
         // Helper function to format time
         function formatTime(seconds) {
             const mins = Math.floor(seconds / 60);
             const secs = seconds % 60;
             return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Get all challenge exercises from all workout types
+        function getAllChallengeExercises() {
+            const challenges = [];
+            const colors = ['orange', 'blue', 'purple', 'emerald', 'pink', 'cyan'];
+            let colorIndex = 0;
+
+            for (const [type, data] of Object.entries(workoutDetails)) {
+                if (data.exercises) {
+                    data.exercises.forEach(ex => {
+                        if (ex.isChallenge) {
+                            challenges.push({
+                                name: ex.name,
+                                reps: ex.reps,
+                                prType: ex.prType,
+                                color: colors[colorIndex % colors.length]
+                            });
+                            colorIndex++;
+                        }
+                    });
+                }
+            }
+            return challenges;
+        }
+
+        // Calculate calories burnt based on completed exercises
+        function calculateCaloriesBurnt() {
+            const workout = getWorkoutForDate(selectedDate);
+            const workoutData = workoutDetails[workout.type];
+
+            let totalBurnt = 0;
+            workoutData.exercises.forEach((ex, index) => {
+                if (exerciseChecks[`${selectedDate}-${index}`] && ex.calories) {
+                    totalBurnt += ex.calories;
+                }
+            });
+
+            return totalBurnt;
         }
 
         // ==================== API CALLS ====================
@@ -1305,12 +1836,11 @@
                 foodDatabase = getEmbeddedFoodData();
             }
 
-            // Fetch from Google Sheets in background and update cache
+            // Fetch from database in background and update cache
             const result = await apiGet('getAllFoods');
             if (result.success && result.foods && result.foods.length > 0) {
                 foodDatabase = result.foods;
                 localStorage.setItem('fitlife_foods_cache', JSON.stringify(result.foods));
-                console.log('Updated foods cache from Google Sheets');
             }
         }
 
@@ -1355,7 +1885,7 @@
                 dailyTotals = localTotals;
             } else {
                 // No data anywhere, initialize empty
-                dailyMeals = { breakfast: [], lunch: [], dinner: [], snacks: [], postworkout: [] };
+                dailyMeals = { breakfast: [], lunch: [], dinner: [], snacks: [], preworkout: [], postworkout: [] };
                 dailyTotals = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
             }
 
@@ -1370,7 +1900,7 @@
             }
             updateGoalsDisplay();
 
-            // Fetch from Google Sheets and update cache
+            // Fetch from database and update cache
             const result = await apiGet('getGoals');
             if (result.success && result.goals) {
                 goals = result.goals;
@@ -1396,6 +1926,10 @@
             document.getElementById('totalCalories').textContent = Math.round(dailyTotals.calories);
             document.getElementById('goalCalories').textContent = goals.calories;
             document.getElementById('goalCaloriesLabel').textContent = goals.calories;
+
+            // Calculate and update calories burnt from workout
+            const caloriesBurnt = calculateCaloriesBurnt();
+            document.getElementById('burntCalories').textContent = caloriesBurnt;
 
             document.getElementById('proteinCurrent').textContent = Math.round(dailyTotals.protein);
             document.getElementById('proteinGoal').textContent = goals.protein;
@@ -1437,6 +1971,87 @@
                 document.getElementById('calorieBar').classList.remove('from-red-500', 'to-red-600');
                 document.getElementById('calorieBar').classList.add('from-rose-400', 'to-rose-500');
             }
+
+            // Update Macro Advisor in Today's Progress
+            updateMacroAdvisor();
+        }
+
+        function updateMacroAdvisor() {
+            const advisorContent = document.getElementById('macroAdvisorContent');
+            if (!advisorContent) return;
+
+            // Generate the advice HTML
+            advisorContent.innerHTML = generateMacroAdvice();
+        }
+
+        function generateMacroAdvice() {
+            const consumed = {
+                calories: dailyTotals.calories || 0,
+                protein: dailyTotals.protein || 0,
+                carbs: dailyTotals.carbs || 0,
+                fat: dailyTotals.fat || 0,
+                fiber: dailyTotals.fiber || 0
+            };
+
+            const remaining = {
+                calories: Math.max(0, goals.calories - consumed.calories),
+                protein: Math.max(0, goals.protein - consumed.protein),
+                carbs: Math.max(0, goals.carbs - consumed.carbs),
+                fat: Math.max(0, goals.fat - consumed.fat),
+                fiber: Math.max(0, goals.fiber - consumed.fiber)
+            };
+
+            const pct = {
+                calories: Math.round((consumed.calories / goals.calories) * 100) || 0,
+                protein: Math.round((consumed.protein / goals.protein) * 100) || 0,
+                carbs: Math.round((consumed.carbs / goals.carbs) * 100) || 0,
+                fat: Math.round((consumed.fat / goals.fat) * 100) || 0,
+                fiber: Math.round((consumed.fiber / goals.fiber) * 100) || 0
+            };
+
+            const advice = [];
+            const mealsRemaining = getMealsRemaining();
+
+            if (remaining.calories <= 0) {
+                advice.push({ type: 'warning', icon: '⚠️', text: `Calorie limit reached. Light snacks only.` });
+            } else if (mealsRemaining.length > 0) {
+                const perMeal = {
+                    calories: Math.round(remaining.calories / mealsRemaining.length),
+                    protein: Math.round(remaining.protein / mealsRemaining.length)
+                };
+
+                if (remaining.protein > 20 && pct.protein < 80) {
+                    advice.push({ type: 'protein', icon: '🥩', text: `Need ${Math.round(remaining.protein)}g more protein (~${perMeal.protein}g/meal).` });
+                }
+
+                if (pct.fat > 100) {
+                    advice.push({ type: 'warning', icon: '🛑', text: `Fat exceeded by ${Math.round(consumed.fat - goals.fat)}g.` });
+                }
+
+                if (pct.fiber < 60) {
+                    advice.push({ type: 'fiber', icon: '🥗', text: `Add more fiber (veggies, dal, salad).` });
+                }
+
+                if (mealsRemaining.length > 0 && remaining.calories > 100) {
+                    const nextMeal = mealsRemaining[0];
+                    advice.push({ type: 'suggestion', icon: '💡', text: `${nextMeal}: ~${perMeal.calories} kcal, ${perMeal.protein}g protein.` });
+                }
+            }
+
+            if (advice.length === 0) {
+                if (pct.calories >= 90 && pct.protein >= 90) {
+                    advice.push({ type: 'success', icon: '🎯', text: 'Great job! You\'re hitting your targets.' });
+                } else {
+                    advice.push({ type: 'info', icon: '📝', text: 'Log meals to get personalized advice.' });
+                }
+            }
+
+            return advice.map(a => `
+                <div class="flex items-start gap-2 py-1">
+                    <span class="flex-shrink-0">${a.icon}</span>
+                    <span class="${a.type === 'warning' ? 'text-red-600' : a.type === 'success' ? 'text-green-600' : 'text-slate-600'}">${a.text}</span>
+                </div>
+            `).join('');
         }
 
         function updateGoalsDisplay() {
@@ -1525,8 +2140,8 @@
 
         function updateMotivationBanner() {
             const date = new Date(selectedDate + 'T00:00:00');
-            const dayOfWeek = (date.getDay() + 6) % 7; // 0=Mon
-            const workout = workoutSchedule[dayOfWeek];
+            const dayOfWeek = (date.getDay() + 6) % 7; // 0=Mon for day name display
+            const workout = getWorkoutForDate(selectedDate);
             const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
             document.getElementById('motiveDateNum').textContent = String(date.getDate()).padStart(2, '0');
@@ -1543,7 +2158,6 @@
         function renderDayNav() {
             const nav = document.getElementById('dayNav');
             const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-            const workout = workoutSchedule;
 
             nav.innerHTML = days.map((day, index) => {
                 const date = new Date(currentWeekStart);
@@ -1551,7 +2165,7 @@
                 const dateKey = date.toISOString().split('T')[0];
                 const isTodayDate = isToday(date);
                 const isSelected = index === currentDayIndex;
-                const w = workout[index];
+                const w = getWorkoutForDate(dateKey);
                 const dayType = dayTypes[dateKey] || 'normal';
 
                 const colorClasses = {
@@ -1559,6 +2173,7 @@
                     blue: 'bg-blue-100 text-blue-700 border-blue-200',
                     purple: 'bg-purple-100 text-purple-700 border-purple-200',
                     teal: 'bg-teal-100 text-teal-700 border-teal-200',
+                    green: 'bg-green-100 text-green-700 border-green-200',
                     gray: 'bg-slate-100 text-slate-500 border-slate-200'
                 };
 
@@ -1613,13 +2228,19 @@
         }
 
         // ==================== TAB RENDERING ====================
-        function renderTabContent() {
+        async function renderTabContent() {
             const container = document.getElementById('tabContent');
             if (currentTab === 'diet') {
                 container.innerHTML = renderDietTab();
-            } else {
+            } else if (currentTab === 'workout') {
                 container.innerHTML = renderWorkoutTab();
+            } else if (currentTab === 'progress') {
+                // Fetch fresh weekly stats from database before rendering
+                await fetchWeeklyStats();
+                container.innerHTML = renderProgressTab();
             }
+            // Re-apply edit mode visibility to newly rendered elements
+            updateEditModeUI();
         }
 
         function renderDietTab() {
@@ -1627,7 +2248,7 @@
 
             return `
                 <!-- Day Type Toggle -->
-                <div class="bg-white rounded-2xl p-3 shadow-sm mb-4">
+                <div class="bg-white rounded-2xl p-3 shadow-sm mb-4 edit-only">
                     <div class="flex items-center justify-between">
                         <span class="text-sm font-medium text-slate-600">Day Type:</span>
                         <div class="flex gap-2">
@@ -1649,38 +2270,16 @@
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <!-- Main Meals Column -->
                     <div class="lg:col-span-2 space-y-4">
-                        ${renderMealSection('breakfast', '🌅 Breakfast', dailyMeals.breakfast)}
-                        ${renderMealSection('lunch', '🍛 Lunch', dailyMeals.lunch)}
-                        ${renderMealSection('dinner', '🌙 Dinner', dailyMeals.dinner)}
+                        ${renderMealSection('breakfast', '🌅 Breakfast', dailyMeals.breakfast || [])}
+                        ${renderMealSection('lunch', '🍛 Lunch', dailyMeals.lunch || [])}
+                        ${renderMealSection('dinner', '🌙 Dinner', dailyMeals.dinner || [])}
                     </div>
 
                     <!-- Side Column -->
                     <div class="space-y-4">
-                        ${renderMealSection('snacks', '🍎 Snacks', dailyMeals.snacks, true)}
-                        ${renderMealSection('postworkout', '🏋️ Post-Workout', dailyMeals.postworkout, true)}
-
-                        <!-- Water Tracker -->
-                        <div class="bg-white rounded-2xl p-4 shadow-sm">
-                            <div class="flex items-center justify-between mb-3">
-                                <h3 class="font-semibold text-slate-800">💧 Water</h3>
-                                <span class="text-sm font-semibold text-cyan-600" id="waterCount">0/8</span>
-                            </div>
-                            <div class="grid grid-cols-8 gap-1" id="waterGlasses">
-                                ${Array(8).fill(0).map((_, i) => `
-                                    <button onclick="setWater(${i + 1})" class="water-glass aspect-square rounded-lg flex items-center justify-center text-sm transition-all bg-slate-100 hover:bg-cyan-100" data-index="${i}">💧</button>
-                                `).join('')}
-                            </div>
-                        </div>
-
-                        <!-- Quick Tips -->
-                        <div class="bg-blue-50 rounded-2xl p-4">
-                            <h3 class="font-semibold text-blue-800 mb-2">💡 Tips</h3>
-                            <div class="text-sm text-blue-700 space-y-1">
-                                <p>• Target: ${goals.protein}g protein for muscle</p>
-                                <p>• Keep carbs moderate (${goals.carbs}g)</p>
-                                <p>• Don't fear healthy fats!</p>
-                            </div>
-                        </div>
+                        ${renderMealSection('snacks', '🍎 Snacks', dailyMeals.snacks || [], true)}
+                        ${renderMealSection('preworkout', '⚡ Pre-Workout', dailyMeals.preworkout || [], true)}
+                        ${renderMealSection('postworkout', '💪 Post-Workout', dailyMeals.postworkout || [], true)}
                     </div>
                 </div>
             `;
@@ -1695,76 +2294,230 @@
                 fiber: acc.fiber + (item.fiber || 0)
             }), { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 });
 
+            // Meal type colors and gradients
+            const mealStyles = {
+                breakfast: { gradient: 'from-amber-500 to-orange-500', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
+                lunch: { gradient: 'from-emerald-500 to-teal-500', bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700' },
+                dinner: { gradient: 'from-violet-500 to-purple-500', bg: 'bg-violet-50', border: 'border-violet-200', text: 'text-violet-700' },
+                snacks: { gradient: 'from-pink-500 to-rose-500', bg: 'bg-pink-50', border: 'border-pink-200', text: 'text-pink-700' },
+                preworkout: { gradient: 'from-cyan-500 to-teal-500', bg: 'bg-cyan-50', border: 'border-cyan-200', text: 'text-cyan-700' },
+                postworkout: { gradient: 'from-blue-500 to-indigo-500', bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' }
+            };
+            const style = mealStyles[mealType] || mealStyles.breakfast;
+
             return `
-                <div class="bg-white rounded-2xl ${isCompact ? 'p-4' : 'p-5'} shadow-sm">
-                    <div class="flex items-center justify-between mb-3">
-                        <h3 class="font-semibold text-slate-800 ${isCompact ? 'text-sm' : ''}">${title}</h3>
-                        <button onclick="openFoodModal('${mealType}')" class="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1">
+                <div class="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100">
+                    <!-- Header with gradient -->
+                    <div class="bg-gradient-to-r ${style.gradient} px-5 py-3 flex items-center justify-between">
+                        <h3 class="font-semibold text-white ${isCompact ? 'text-sm' : 'text-base'}">${title}</h3>
+                        <button onclick="openFoodModal('${mealType}')" class="bg-white/20 hover:bg-white/30 text-white text-sm font-medium flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all edit-only">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                             Add
                         </button>
                     </div>
 
-                    ${items.length === 0 ? `
-                        <div class="text-center py-4 text-slate-400 text-sm">
-                            No items yet. Tap + Add to log food.
-                        </div>
-                    ` : `
-                        <div class="space-y-2">
-                            ${items.map((item, index) => `
-                                <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50 group">
-                                    <div class="flex-1 min-w-0">
-                                        <div class="font-medium text-sm text-slate-800 truncate">${item.foodName}</div>
-                                        <div class="text-xs text-slate-500">${item.quantity} ${item.unit}</div>
-                                        <div class="text-xs mt-0.5">
-                                            <span class="text-amber-600 font-medium">${Math.round(item.protein)}P</span>
-                                            <span class="text-slate-300 mx-0.5">•</span>
-                                            <span class="text-blue-500">${Math.round(item.carbs)}C</span>
-                                            <span class="text-slate-300 mx-0.5">•</span>
-                                            <span class="text-orange-500">${Math.round(item.fat)}F</span>
-                                            <span class="text-slate-300 mx-0.5">•</span>
-                                            <span class="text-green-600">${Math.round(item.fiber)}Fi</span>
+                    <div class="${isCompact ? 'p-3' : 'p-4'}">
+                        ${items.length === 0 ? `
+                            <div class="text-center py-6 ${style.bg} rounded-xl border-2 border-dashed ${style.border}">
+                                <div class="text-3xl mb-2">${mealType === 'breakfast' ? '🍳' : mealType === 'lunch' ? '🥗' : mealType === 'dinner' ? '🍽️' : mealType === 'snacks' ? '🍎' : mealType === 'preworkout' ? '⚡' : '💪'}</div>
+                                <p class="text-slate-500 text-sm">No items yet</p>
+                                <p class="text-slate-400 text-xs mt-1">Tap + Add to log food</p>
+                            </div>
+                        ` : `
+                            <div class="space-y-2">
+                                ${items.map((item, index) => `
+                                    <div class="group relative flex items-start gap-3 p-3 rounded-xl ${style.bg} border ${style.border} hover:shadow-md transition-all">
+                                        <!-- Calorie badge -->
+                                        <div class="absolute -top-2 -right-2 bg-gradient-to-r ${style.gradient} text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg">
+                                            ${Math.round(item.calories)}
+                                        </div>
+
+                                        <!-- Food info -->
+                                        <div class="flex-1 min-w-0 pr-6">
+                                            <div class="font-semibold text-slate-800 text-sm leading-tight">${item.foodName}</div>
+                                            <div class="text-xs text-slate-500 mt-0.5">${item.quantity} ${item.unit}</div>
+
+                                            <!-- Macro pills -->
+                                            <div class="flex flex-wrap gap-1.5 mt-2">
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+                                                    ${Math.round(item.protein)}g P
+                                                </span>
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                                                    ${Math.round(item.carbs)}g C
+                                                </span>
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">
+                                                    ${Math.round(item.fat)}g F
+                                                </span>
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                                                    ${Math.round(item.fiber)}g Fi
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Action buttons -->
+                                        <div class="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity edit-only">
+                                            <button onclick="editMealItem('${mealType}', ${index})" class="p-1.5 bg-white rounded-lg shadow-sm text-slate-400 hover:text-blue-500 hover:shadow-md transition-all" title="Edit">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                            </button>
+                                            <button onclick="deleteFood('${mealType}', ${index})" class="p-1.5 bg-white rounded-lg shadow-sm text-slate-400 hover:text-red-500 hover:shadow-md transition-all" title="Delete">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                            </button>
                                         </div>
                                     </div>
-                                    <div class="flex items-center gap-1">
-                                        <span class="text-sm font-semibold text-rose-500 mr-1">${Math.round(item.calories)}</span>
-                                        <button onclick="editMealItem('${mealType}', ${index})" class="p-1 text-slate-400 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" title="Edit">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                                        </button>
-                                        <button onclick="deleteFood('${mealType}', ${index})" class="p-1 text-slate-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity" title="Delete">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                        </button>
+                                `).join('')}
+                            </div>
+
+                            <!-- Subtotal row - left aligned -->
+                            <div class="mt-3 pt-3 border-t border-slate-200">
+                                <div class="flex items-center gap-3 flex-wrap">
+                                    <span class="text-slate-500 text-sm font-medium">Subtotal:</span>
+                                    <span class="font-bold text-slate-700">${Math.round(subtotal.calories)} <span class="text-xs font-normal text-slate-400">kcal</span></span>
+                                    <div class="flex gap-2 text-xs">
+                                        <span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 font-medium">${Math.round(subtotal.protein)}P</span>
+                                        <span class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium">${Math.round(subtotal.carbs)}C</span>
+                                        <span class="px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 font-medium">${Math.round(subtotal.fat)}F</span>
+                                        <span class="px-2 py-0.5 rounded-full bg-green-50 text-green-600 font-medium">${Math.round(subtotal.fiber)}Fi</span>
                                     </div>
                                 </div>
-                            `).join('')}
-                        </div>
-                        <div class="mt-3 pt-3 border-t border-slate-100">
-                            <div class="flex justify-between items-center text-sm mb-1">
-                                <span class="text-slate-500 font-medium">Subtotal</span>
-                                <span class="font-bold text-rose-500">${Math.round(subtotal.calories)} kcal</span>
                             </div>
-                            <div class="flex justify-end gap-3 text-xs">
-                                <span class="text-amber-600 font-semibold">${Math.round(subtotal.protein)}g P</span>
-                                <span class="text-blue-500 font-semibold">${Math.round(subtotal.carbs)}g C</span>
-                                <span class="text-orange-500 font-semibold">${Math.round(subtotal.fat)}g F</span>
-                                <span class="text-green-600 font-semibold">${Math.round(subtotal.fiber)}g Fi</span>
-                            </div>
-                        </div>
-                    `}
+                        `}
+                    </div>
                 </div>
             `;
         }
 
+        // Intelligent Macro Analyzer
+        function renderMacroAnalysis() {
+            // Calculate totals consumed so far
+            const consumed = {
+                calories: dailyTotals.calories || 0,
+                protein: dailyTotals.protein || 0,
+                carbs: dailyTotals.carbs || 0,
+                fat: dailyTotals.fat || 0,
+                fiber: dailyTotals.fiber || 0
+            };
+
+            // Calculate remaining
+            const remaining = {
+                calories: Math.max(0, goals.calories - consumed.calories),
+                protein: Math.max(0, goals.protein - consumed.protein),
+                carbs: Math.max(0, goals.carbs - consumed.carbs),
+                fat: Math.max(0, goals.fat - consumed.fat),
+                fiber: Math.max(0, goals.fiber - consumed.fiber)
+            };
+
+            // Calculate percentages
+            const pct = {
+                calories: Math.round((consumed.calories / goals.calories) * 100),
+                protein: Math.round((consumed.protein / goals.protein) * 100),
+                carbs: Math.round((consumed.carbs / goals.carbs) * 100),
+                fat: Math.round((consumed.fat / goals.fat) * 100),
+                fiber: Math.round((consumed.fiber / goals.fiber) * 100)
+            };
+
+            // Determine status for each macro
+            const getStatus = (pct, macro) => {
+                if (pct >= 100) return { icon: '✅', color: 'text-green-600', bg: 'bg-green-100', msg: 'Goal reached!' };
+                if (pct >= 80) return { icon: '👍', color: 'text-blue-600', bg: 'bg-blue-100', msg: 'Almost there' };
+                if (pct >= 50) return { icon: '📊', color: 'text-amber-600', bg: 'bg-amber-100', msg: 'On track' };
+                return { icon: '⚠️', color: 'text-slate-500', bg: 'bg-slate-100', msg: 'Needs attention' };
+            };
+
+            // Generate smart advice based on what's remaining
+            const advice = [];
+            const mealsRemaining = getMealsRemaining();
+
+            if (remaining.calories <= 0) {
+                advice.push({ type: 'warning', icon: '⚠️', text: `You've hit your calorie limit (${Math.round(consumed.calories)} kcal). Consider light snacks only.` });
+            } else if (mealsRemaining.length > 0) {
+                // Distribute remaining across meals
+                const perMeal = {
+                    calories: Math.round(remaining.calories / mealsRemaining.length),
+                    protein: Math.round(remaining.protein / mealsRemaining.length),
+                    carbs: Math.round(remaining.carbs / mealsRemaining.length),
+                    fat: Math.round(remaining.fat / mealsRemaining.length)
+                };
+
+                if (remaining.protein > 20 && pct.protein < 80) {
+                    advice.push({ type: 'protein', icon: '🥩', text: `Need ${Math.round(remaining.protein)}g more protein. Aim for ~${perMeal.protein}g per remaining meal.` });
+                }
+
+                if (pct.protein >= 100 && pct.carbs < 70) {
+                    advice.push({ type: 'carbs', icon: '🍚', text: `Protein goal met! You can have ${Math.round(remaining.carbs)}g carbs (rice, roti, fruits).` });
+                }
+
+                if (pct.fat > 100) {
+                    advice.push({ type: 'warning', icon: '🛑', text: `Fat exceeded by ${Math.round(consumed.fat - goals.fat)}g. Go easy on oils and fried foods.` });
+                } else if (pct.fat < 50 && remaining.calories > 200) {
+                    advice.push({ type: 'fat', icon: '🥜', text: `Room for ${Math.round(remaining.fat)}g healthy fats (nuts, ghee, avocado).` });
+                }
+
+                if (pct.fiber < 60) {
+                    advice.push({ type: 'fiber', icon: '🥗', text: `Low fiber (${Math.round(consumed.fiber)}g). Add veggies, dal, or salad.` });
+                }
+
+                // Suggest meal composition
+                if (mealsRemaining.length > 0 && remaining.calories > 100) {
+                    const nextMeal = mealsRemaining[0];
+                    advice.push({
+                        type: 'suggestion',
+                        icon: '💡',
+                        text: `For ${nextMeal}: ~${perMeal.calories} kcal with ${perMeal.protein}g protein.`
+                    });
+                }
+            }
+
+            // If no specific advice, show general status
+            if (advice.length === 0) {
+                if (pct.calories >= 90 && pct.protein >= 90) {
+                    advice.push({ type: 'success', icon: '🎯', text: 'Great job! You\'re hitting your targets today.' });
+                } else {
+                    advice.push({ type: 'info', icon: '📝', text: 'Start logging meals to get personalized advice.' });
+                }
+            }
+
+            // Build HTML - Focus on actionable advice only (no progress bars - those are in Today's Progress widget)
+            return `
+                <div class="space-y-2">
+                    ${advice.map(a => `
+                        <div class="flex items-start gap-2 text-sm p-2 rounded-lg ${a.type === 'warning' ? 'bg-red-50' : a.type === 'success' ? 'bg-green-50' : 'bg-white/50'}">
+                            <span class="flex-shrink-0 text-base">${a.icon}</span>
+                            <span class="${a.type === 'warning' ? 'text-red-700' : a.type === 'success' ? 'text-green-700' : 'text-indigo-700'}">${a.text}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function getMealsRemaining() {
+            const hour = new Date().getHours();
+            const meals = [];
+
+            // Check which meals haven't been logged and are still upcoming
+            if (hour < 10 && (!dailyMeals.breakfast || dailyMeals.breakfast.length === 0)) meals.push('breakfast');
+            if (hour < 14 && (!dailyMeals.lunch || dailyMeals.lunch.length === 0)) meals.push('lunch');
+            if (hour < 20 && (!dailyMeals.dinner || dailyMeals.dinner.length === 0)) meals.push('dinner');
+
+            // If current day is not today, return all unlogged meals
+            const today = new Date().toISOString().split('T')[0];
+            if (selectedDate !== today) {
+                const allMeals = [];
+                if (!dailyMeals.breakfast || dailyMeals.breakfast.length === 0) allMeals.push('breakfast');
+                if (!dailyMeals.lunch || dailyMeals.lunch.length === 0) allMeals.push('lunch');
+                if (!dailyMeals.dinner || dailyMeals.dinner.length === 0) allMeals.push('dinner');
+                return allMeals;
+            }
+
+            return meals;
+        }
+
         function renderWorkoutTab() {
             const dayOfWeek = new Date(selectedDate + 'T00:00:00').getDay();
-            const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert to Mon=0
-            const workout = workoutSchedule[adjustedDay];
+            const adjustedDay = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert to Mon=0 for week display
+            const workout = getWorkoutForDate(selectedDate);
             const workoutData = workoutDetails[workout.type];
 
             // Get PRs for challenge exercises
-            const pushupPr = prLog['Push-ups'] || null;
-            const pullupPr = prLog['Pull-ups'] || null;
-            const squatPr = prLog['Squats'] || null;
 
             // Count completed exercises
             const exerciseCount = workoutData.exercises.filter(e => !e.isRest && !e.isOptional).length;
@@ -1784,12 +2537,19 @@
                                     <h2 class="font-display text-2xl font-semibold text-slate-800">${workout.emoji} ${workoutData.title}</h2>
                                     <p class="text-slate-500 text-sm mt-1">${workoutData.subtitle}</p>
                                 </div>
-                                <div class="text-right">
-                                    ${workout.type !== 'rest' ? `
-                                        <div class="text-sm font-semibold text-orange-600 bg-orange-50 px-3 py-1 rounded-full">${exercisesCompleted}/${exerciseCount} done</div>
-                                    ` : `
-                                        <div class="text-sm text-slate-400">Rest Day</div>
-                                    `}
+                                <div class="flex items-center gap-3">
+                                    <button onclick="openWorkoutEditor()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-sm font-medium transition-all edit-only flex items-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                        Edit
+                                    </button>
+                                    <div class="text-right">
+                                        ${workout.type !== 'rest' ? `
+                                            <div class="text-sm font-semibold text-orange-600 bg-orange-50 px-3 py-1 rounded-full">${exercisesCompleted}/${exerciseCount} done</div>
+                                            <div class="text-xs text-slate-500 mt-1">🔥 ${calculateCaloriesBurnt()} / ${workoutData.totalCalories} kcal</div>
+                                        ` : `
+                                            <div class="text-sm text-slate-400">Rest Day</div>
+                                        `}
+                                    </div>
                                 </div>
                             </div>
 
@@ -1797,6 +2557,7 @@
                                 ${workoutData.exercises.map((ex, index) => {
                                     const isChecked = exerciseChecks[`${selectedDate}-${index}`];
                                     const pr = prLog[ex.name];
+                                    const todayAttempt = dailyPrAttempts[`${selectedDate}-${ex.name}`];
 
                                     if (ex.isRest) {
                                         return `
@@ -1820,23 +2581,33 @@
                                                         ${ex.isChallenge ? '<span class="text-xs font-semibold text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">🏆 CHALLENGE</span>' : ''}
                                                         ${ex.isOptional ? '<span class="text-xs text-slate-400">(Optional)</span>' : ''}
                                                     </div>
-                                                    <div class="flex items-center gap-4 text-sm text-slate-500 mb-2">
+                                                    <div class="flex items-center gap-4 text-sm text-slate-500 mb-2 flex-wrap">
                                                         <span><strong>Sets:</strong> ${ex.sets}</span>
                                                         <span><strong>Reps:</strong> ${ex.reps}</span>
                                                         ${ex.rest !== '—' ? `<span><strong>Rest:</strong> ${ex.rest}</span>` : ''}
+                                                        ${ex.calories ? `<span class="text-orange-500"><strong>🔥</strong> ${ex.calories} kcal</span>` : ''}
                                                     </div>
                                                     <div class="text-sm text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg inline-block">${ex.notes}</div>
 
                                                     ${ex.isChallenge ? `
                                                         <div class="mt-3 flex items-center gap-3 flex-wrap">
-                                                            <button onclick="openPrModal('${ex.name}', '${ex.prType}', '${ex.prUnit}')" class="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-semibold text-sm shadow-lg shadow-orange-500/30 hover:shadow-xl transition-all">
+                                                            <button onclick="openPrModal('${ex.name}', '${ex.prType}', '${ex.prUnit}')" class="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg font-semibold text-sm shadow-lg shadow-orange-500/30 hover:shadow-xl transition-all edit-only">
                                                                 📝 Log ${ex.prType === 'time' ? 'Time' : 'Reps'}
                                                             </button>
+                                                            ${todayAttempt ? `
+                                                                <div class="text-sm flex items-center gap-2">
+                                                                    <span class="text-slate-400">Today:</span>
+                                                                    <span class="font-bold text-blue-600">${ex.prType === 'time' ? formatTime(todayAttempt.value) : todayAttempt.value + ' reps'}</span>
+                                                                </div>
+                                                            ` : ''}
                                                             ${pr ? `
-                                                                <div class="text-sm">
+                                                                <div class="text-sm flex items-center gap-2">
                                                                     <span class="text-slate-400">Best:</span>
                                                                     <span class="font-bold text-orange-600">${ex.prType === 'time' ? formatTime(pr.value) : pr.value + ' reps'}</span>
                                                                     <span class="text-xs text-slate-400">(${pr.date})</span>
+                                                                    <button onclick="openPrModal('${ex.name}', '${ex.prType}', '${ex.prUnit}', true)" class="p-1 text-slate-400 hover:text-blue-500 transition-colors edit-only" title="Edit PR">
+                                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                                                    </button>
                                                                 </div>
                                                             ` : ''}
                                                         </div>
@@ -1855,21 +2626,22 @@
                         <div class="bg-gradient-to-br from-orange-500 to-red-500 rounded-3xl p-5 text-white shadow-xl">
                             <h3 class="font-display text-lg font-semibold mb-4">🏆 Personal Records</h3>
                             <div class="space-y-3">
-                                <div class="bg-white/20 rounded-xl p-3">
-                                    <div class="text-sm opacity-80">Push-ups (100)</div>
-                                    <div class="text-xl font-bold">${pushupPr ? formatTime(pushupPr.value) : '—'}</div>
-                                    ${pushupPr ? `<div class="text-xs opacity-70">${pushupPr.date}</div>` : ''}
-                                </div>
-                                <div class="bg-white/20 rounded-xl p-3">
-                                    <div class="text-sm opacity-80">Pull-ups (30)</div>
-                                    <div class="text-xl font-bold">${pullupPr ? formatTime(pullupPr.value) : '—'}</div>
-                                    ${pullupPr ? `<div class="text-xs opacity-70">${pullupPr.date}</div>` : ''}
-                                </div>
-                                <div class="bg-white/20 rounded-xl p-3">
-                                    <div class="text-sm opacity-80">Squats (60s)</div>
-                                    <div class="text-xl font-bold">${squatPr ? squatPr.value + ' reps' : '—'}</div>
-                                    ${squatPr ? `<div class="text-xs opacity-70">${squatPr.date}</div>` : ''}
-                                </div>
+                                ${(() => {
+                                    const challenges = getAllChallengeExercises();
+                                    if (challenges.length === 0) {
+                                        return '<div class="text-center py-4 text-white/80">No challenge exercises yet</div>';
+                                    }
+                                    return challenges.map(ch => {
+                                        const pr = prLog[ch.name];
+                                        return `
+                                            <div class="bg-white/20 rounded-xl p-3">
+                                                <div class="text-sm opacity-80">${ch.name} (${ch.reps})</div>
+                                                <div class="text-xl font-bold">${pr ? (ch.prType === 'time' ? formatTime(pr.value) : pr.value + ' reps') : '—'}</div>
+                                                ${pr ? `<div class="text-xs opacity-70">${pr.date}</div>` : ''}
+                                            </div>
+                                        `;
+                                    }).join('');
+                                })()}
                             </div>
                         </div>
 
@@ -1877,12 +2649,17 @@
                         <div class="bg-white rounded-2xl p-5 shadow-sm">
                             <h3 class="font-display text-lg font-semibold text-slate-800 mb-4">📅 This Week</h3>
                             <div class="space-y-2">
-                                ${Object.entries(workoutSchedule).map(([day, w]) => `
-                                    <div class="flex items-center justify-between p-2 rounded-lg ${parseInt(day) === adjustedDay ? 'bg-blue-50' : ''}">
-                                        <span class="text-sm ${parseInt(day) === adjustedDay ? 'font-semibold text-blue-700' : 'text-slate-600'}">${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][day]}</span>
-                                        <span class="text-sm ${w.type === 'rest' ? 'text-slate-400' : 'font-medium text-slate-700'}">${w.emoji} ${w.name}</span>
+                                ${[0,1,2,3,4,5,6].map(day => {
+                                    const weekDate = new Date(currentWeekStart);
+                                    weekDate.setDate(weekDate.getDate() + day);
+                                    const dateKey = weekDate.toISOString().split('T')[0];
+                                    const w = getWorkoutForDate(dateKey);
+                                    return `
+                                    <div class="flex items-center justify-between p-2 rounded-lg ${day === adjustedDay ? 'bg-blue-50' : ''}">
+                                        <span class="text-sm ${day === adjustedDay ? 'font-semibold text-blue-700' : 'text-slate-600'}">${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][day]}</span>
+                                        <span class="text-sm font-medium text-slate-700">${w.emoji} ${w.name}</span>
                                     </div>
-                                `).join('')}
+                                `}).join('')}
                             </div>
                         </div>
 
@@ -1901,11 +2678,269 @@
             `;
         }
 
+        // ==================== PROGRESS TAB ====================
+        function renderProgressTab() {
+            // Get weight history data - weightHistory is an array of {date, weight} objects
+            const sortedWeights = [...(weightHistory || [])]
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .slice(0, 14); // Last 14 entries
+
+            const latestWeight = sortedWeights.length > 0 ? sortedWeights[0].weight : null;
+            const oldestWeight = sortedWeights.length > 1 ? sortedWeights[sortedWeights.length - 1].weight : latestWeight;
+            const weightChange = latestWeight && oldestWeight ? (latestWeight - oldestWeight).toFixed(1) : 0;
+            const weightTrend = parseFloat(weightChange) < 0 ? 'down' : parseFloat(weightChange) > 0 ? 'up' : 'same';
+
+            // Use the global currentStreak which is loaded from database
+            const streak = currentStreak;
+
+            // Get weekly stats
+            const weekStats = getWeeklyStats();
+
+            // Calculate workout completion
+            const workoutCompletion = calculateWorkoutCompletion();
+
+            return `
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Main Stats Column -->
+                    <div class="lg:col-span-2 space-y-5">
+                        <!-- Weight Progress Card -->
+                        <div class="bg-white rounded-3xl p-6 shadow-sm">
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="font-display text-xl font-semibold text-slate-800">⚖️ Weight Progress</h2>
+                                <button onclick="openWeightModal()" class="px-4 py-2 bg-emerald-500 text-white rounded-xl text-sm font-semibold hover:bg-emerald-600 transition-colors edit-only">
+                                    + Log Weight
+                                </button>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-4 mb-6">
+                                <div class="bg-slate-50 rounded-2xl p-4 text-center">
+                                    <div class="text-sm text-slate-500 mb-1">Current</div>
+                                    <div class="text-2xl font-bold text-slate-800">${latestWeight ? latestWeight + ' kg' : '--'}</div>
+                                </div>
+                                <div class="bg-slate-50 rounded-2xl p-4 text-center">
+                                    <div class="text-sm text-slate-500 mb-1">Target</div>
+                                    <div class="text-2xl font-bold text-emerald-600">${goals.targetWeight} kg</div>
+                                </div>
+                                <div class="bg-slate-50 rounded-2xl p-4 text-center">
+                                    <div class="text-sm text-slate-500 mb-1">Change</div>
+                                    <div class="text-2xl font-bold ${weightTrend === 'down' ? 'text-emerald-600' : weightTrend === 'up' ? 'text-red-500' : 'text-slate-600'}">
+                                        ${weightChange > 0 ? '+' : ''}${weightChange} kg
+                                        ${weightTrend === 'down' ? '↓' : weightTrend === 'up' ? '↑' : '→'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Weight History -->
+                            <div class="space-y-2">
+                                <div class="text-sm font-semibold text-slate-600 mb-2">Recent Entries</div>
+                                ${sortedWeights.length > 0 ? sortedWeights.slice(0, 7).map((entry, i) => `
+                                    <div class="flex items-center justify-between py-2 px-3 rounded-lg ${i === 0 ? 'bg-emerald-50' : 'bg-slate-50'}">
+                                        <span class="text-sm text-slate-600">${formatDateDisplay(entry.date)}</span>
+                                        <span class="font-semibold ${i === 0 ? 'text-emerald-700' : 'text-slate-700'}">${entry.weight} kg</span>
+                                    </div>
+                                `).join('') : `
+                                    <div class="text-center py-8 text-slate-400">
+                                        <p>No weight entries yet</p>
+                                        <p class="text-sm mt-1">Click "Log Weight" to start tracking</p>
+                                    </div>
+                                `}
+                            </div>
+                        </div>
+
+                        <!-- Weekly Summary Card -->
+                        <div class="bg-white rounded-3xl p-6 shadow-sm">
+                            <h2 class="font-display text-xl font-semibold text-slate-800 mb-4">📅 This Week's Summary</h2>
+
+                            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                <div class="bg-rose-50 rounded-2xl p-4 text-center">
+                                    <div class="text-2xl mb-1">🍽️</div>
+                                    <div class="text-xl font-bold text-rose-600">${weekStats.avgCalories}</div>
+                                    <div class="text-xs text-rose-600/70">Avg Consumed</div>
+                                </div>
+                                <div class="bg-orange-50 rounded-2xl p-4 text-center">
+                                    <div class="text-2xl mb-1">🔥</div>
+                                    <div class="text-xl font-bold text-orange-600">${weekStats.avgCaloriesBurnt || 0}</div>
+                                    <div class="text-xs text-orange-600/70">Avg Burnt</div>
+                                </div>
+                                <div class="bg-blue-50 rounded-2xl p-4 text-center">
+                                    <div class="text-2xl mb-1">🥩</div>
+                                    <div class="text-xl font-bold text-blue-600">${weekStats.avgProtein}g</div>
+                                    <div class="text-xs text-blue-600/70">Avg Protein</div>
+                                </div>
+                                <div class="bg-cyan-50 rounded-2xl p-4 text-center">
+                                    <div class="text-2xl mb-1">💧</div>
+                                    <div class="text-xl font-bold text-cyan-600">${weekStats.avgWaterMl}ml</div>
+                                    <div class="text-xs text-cyan-600/70">Avg Water</div>
+                                </div>
+                                <div class="bg-purple-50 rounded-2xl p-4 text-center">
+                                    <div class="text-2xl mb-1">💪</div>
+                                    <div class="text-xl font-bold text-purple-600">${workoutCompletion}%</div>
+                                    <div class="text-xs text-purple-600/70">Workouts Done</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Personal Records Card -->
+                        <div class="bg-gradient-to-br from-orange-500 to-red-500 rounded-3xl p-6 shadow-xl text-white">
+                            <h2 class="font-display text-xl font-semibold mb-4">🏆 Personal Records</h2>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                ${(() => {
+                                    const challenges = getAllChallengeExercises();
+                                    if (challenges.length === 0) {
+                                        return '<div class="col-span-full text-center py-4 text-white/80">No challenge exercises yet. Add challenges to your workouts!</div>';
+                                    }
+                                    return challenges.map(ch => {
+                                        const pr = prLog[ch.name];
+                                        return `
+                                            <div class="bg-white/20 rounded-xl p-4">
+                                                <div class="text-sm text-white/80 mb-1">${ch.name}</div>
+                                                <div class="text-sm text-white/60 mb-2">(${ch.reps})</div>
+                                                <div class="text-2xl font-bold">${pr ? (ch.prType === 'time' ? formatTime(pr.value) : pr.value + ' reps') : '—'}</div>
+                                                ${pr ? `<div class="text-xs text-white/70 mt-1">${pr.date}</div>` : '<div class="text-xs text-white/60 mt-1">Not set</div>'}
+                                            </div>
+                                        `;
+                                    }).join('');
+                                })()}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sidebar -->
+                    <div class="space-y-5">
+                        <!-- Streak Card -->
+                        <div class="bg-gradient-to-br from-orange-500 to-red-500 rounded-3xl p-5 text-white shadow-xl">
+                            <h3 class="font-display text-lg font-semibold mb-3">🔥 Current Streak</h3>
+                            <div class="text-center py-4">
+                                <div class="text-5xl font-bold mb-2">${streak}</div>
+                                <div class="text-white/80">day${streak !== 1 ? 's' : ''} in a row!</div>
+                            </div>
+                            <div class="bg-white/20 rounded-xl p-3 mt-4">
+                                <div class="text-sm text-white/90">
+                                    ${streak >= 7 ? '🏆 Amazing! Keep the momentum going!' :
+                                      streak >= 3 ? '⭐ Great start! Stay consistent!' :
+                                      streak >= 1 ? '💪 Good job! Build your streak!' :
+                                      '🚀 Start logging to build your streak!'}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Goals Card -->
+                        <div class="bg-white rounded-2xl p-5 shadow-sm">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-display text-lg font-semibold text-slate-800">🎯 Daily Goals</h3>
+                                <button onclick="openGoalsModal()" class="text-blue-500 text-sm font-medium hover:text-blue-600">Edit</button>
+                            </div>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                                    <span class="text-slate-600">Calories</span>
+                                    <span class="font-semibold text-slate-800">${goals.calories} kcal</span>
+                                </div>
+                                <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                                    <span class="text-slate-600">Protein</span>
+                                    <span class="font-semibold text-slate-800">${goals.protein}g</span>
+                                </div>
+                                <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                                    <span class="text-slate-600">Carbs</span>
+                                    <span class="font-semibold text-slate-800">${goals.carbs}g</span>
+                                </div>
+                                <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                                    <span class="text-slate-600">Fat</span>
+                                    <span class="font-semibold text-slate-800">${goals.fat}g</span>
+                                </div>
+                                <div class="flex justify-between items-center py-2">
+                                    <span class="text-slate-600">Target Weight</span>
+                                    <span class="font-semibold text-emerald-600">${goals.targetWeight} kg</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Data Sync Card - Only shows if there are pending syncs or offline -->
+                        ${pendingSyncs.length > 0 || isOffline ? `
+                        <div class="bg-white rounded-2xl p-5 shadow-sm border-2 ${pendingSyncs.length > 0 ? 'border-orange-300' : 'border-slate-200'}">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="font-display text-lg font-semibold text-slate-800">☁️ Sync Status</h3>
+                                ${pendingSyncs.length > 0 ? `<span class="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full">${pendingSyncs.length} pending</span>` : ''}
+                            </div>
+                            <div class="text-sm text-slate-500 mb-4">
+                                ${isOffline ? 'You are offline. Data will sync when connection is restored.' :
+                                  pendingSyncs.length > 0 ? 'Some items failed to sync. Click below to retry.' :
+                                  'All data synced successfully.'}
+                            </div>
+                            ${pendingSyncs.length > 0 ? `
+                            <button onclick="processPendingSyncs()" class="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2">
+                                <span>⟳</span> Retry Sync (${pendingSyncs.length} items)
+                            </button>
+                            ` : ''}
+                            <div id="syncStatusText" class="text-xs text-slate-400 mt-3 text-center"></div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Helper function to get weekly stats - fetches from database
+        let cachedWeeklyStats = { avgCalories: 0, avgProtein: 0, avgWaterMl: 0, avgCaloriesBurnt: 0 };
+
+        async function fetchWeeklyStats() {
+            try {
+                const startDate = currentWeekStart.toISOString().split('T')[0];
+                const result = await apiGet('getWeeklyStats', { startDate });
+                if (result.success) {
+                    cachedWeeklyStats = {
+                        avgCalories: result.avgCalories || 0,
+                        avgProtein: result.avgProtein || 0,
+                        avgWaterMl: result.avgWaterMl || 0,
+                        avgCaloriesBurnt: result.avgCaloriesBurnt || 0
+                    };
+                }
+            } catch (error) {
+                console.error('Failed to fetch weekly stats:', error);
+            }
+            return cachedWeeklyStats;
+        }
+
+        function getWeeklyStats() {
+            // Return cached stats synchronously (for template rendering)
+            return cachedWeeklyStats;
+        }
+
+        // Helper function to calculate workout completion
+        function calculateWorkoutCompletion() {
+            let completed = 0, total = 0;
+
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(currentWeekStart);
+                date.setDate(date.getDate() + i);
+                const dateKey = date.toISOString().split('T')[0];
+
+                const workout = getWorkoutForDate(dateKey);
+                const workoutData = workoutDetails[workout.type];
+
+                if (workoutData && workoutData.exercises) {
+                    const exercises = workoutData.exercises.filter(e => !e.isRest && !e.isOptional);
+                    total += exercises.length;
+
+                    exercises.forEach((ex, idx) => {
+                        if (exerciseChecks[`${dateKey}-${idx}`]) {
+                            completed++;
+                        }
+                    });
+                }
+            }
+
+            return total > 0 ? Math.round((completed / total) * 100) : 0;
+        }
+
         // ==================== FOOD MODAL ====================
         let currentFoodModalTab = 'search';
         let comboFilter = 'all';
 
         function openFoodModal(mealType) {
+            if (!isEditMode) {
+                showToast('Unlock edit mode to add food', 'info');
+                return;
+            }
             currentMealType = mealType;
             comboFilter = 'all';
             currentFoodModalTab = 'search';
@@ -2018,17 +3053,17 @@
             container.innerHTML = filteredCombos.map(combo => {
                 const macros = getComboMacros(combo);
                 return `
-                <button onclick="showComboPreview(${combo.id})" class="p-3 bg-gradient-to-br ${getComboBg(combo)} border rounded-xl transition-all text-left hover:shadow-md">
+                <button onclick="showComboPreview(${parseInt(combo.id)})" class="p-3 bg-gradient-to-br ${getComboBg(combo)} border rounded-xl transition-all text-left hover:shadow-md">
                     <div class="flex items-start gap-2">
-                        <span class="text-xl">${combo.emoji}</span>
+                        <span class="text-xl">${escapeHtml(combo.emoji)}</span>
                         <div class="flex-1 min-w-0">
                             <div class="flex flex-wrap items-center gap-1 mb-1">
-                                <span class="text-xs font-semibold text-slate-700 leading-tight">${combo.name}</span>
+                                <span class="text-xs font-semibold text-slate-700 leading-tight">${escapeHtml(combo.name)}</span>
                                 ${getTagBadge(combo)}
                             </div>
-                            <div class="text-[10px] font-medium text-rose-500">${combo.totalCalories} kcal</div>
+                            <div class="text-[10px] font-medium text-rose-500">${parseInt(combo.totalCalories)} kcal</div>
                             <div class="flex flex-wrap gap-x-2 text-[10px]">
-                                <span class="text-amber-600">${combo.totalProtein}g P</span>
+                                <span class="text-amber-600">${parseInt(combo.totalProtein)}g P</span>
                                 <span class="text-blue-600">${Math.round(macros.carbs)}g C</span>
                                 <span class="text-pink-500">${Math.round(macros.fat)}g F</span>
                             </div>
@@ -2086,20 +3121,24 @@
                     <button onclick="switchFoodModalTab('combos')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-medium transition-all text-sm">
                         ← Back
                     </button>
-                    <button onclick="editCombo(${combo.id})" class="py-2.5 px-4 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-xl font-medium transition-all text-sm">
+                    <button onclick="editCombo(${combo.id})" class="py-2.5 px-4 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-xl font-medium transition-all text-sm edit-only">
                         ✏️ Edit
                     </button>
-                    <button onclick="deleteCombo(${combo.id})" class="py-2.5 px-4 bg-red-100 hover:bg-red-200 text-red-600 rounded-xl font-medium transition-all text-sm">
+                    <button onclick="deleteCombo(${combo.id})" class="py-2.5 px-4 bg-red-100 hover:bg-red-200 text-red-600 rounded-xl font-medium transition-all text-sm edit-only">
                         🗑️
                     </button>
                 </div>
-                <button onclick="addComboToMeal(${combo.id})" class="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/30 text-sm">
+                <button onclick="addComboToMeal(${combo.id})" class="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/30 text-sm edit-only">
                     + Add All Items
                 </button>
             `;
         }
 
         async function addComboToMeal(comboId) {
+            if (!isEditMode) {
+                showToast('Unlock edit mode to add combo', 'info');
+                return;
+            }
             const combo = savedMealCombos.find(c => c.id === comboId);
             if (!combo) return;
 
@@ -2122,7 +3161,8 @@
                     fiber: item.fiber || 0
                 };
 
-                // Add to local state
+                // Add to local state (ensure array exists)
+                if (!dailyMeals[currentMealType]) dailyMeals[currentMealType] = [];
                 dailyMeals[currentMealType].push(mealItem);
                 dailyTotals.calories += mealItem.calories;
                 dailyTotals.protein += mealItem.protein;
@@ -2206,19 +3246,19 @@
             }
 
             container.innerHTML = foods.map(food => `
-                <div class="food-item p-3 rounded-xl cursor-pointer transition-all border border-transparent hover:border-blue-200 hover:bg-blue-50/50" onclick="selectFood(${food.id})">
+                <div class="food-item p-3 rounded-xl cursor-pointer transition-all border border-transparent hover:border-blue-200 hover:bg-blue-50/50" onclick="selectFood(${parseInt(food.id)})">
                     <div class="flex items-center justify-between mb-1.5">
                         <div>
-                            <div class="font-medium text-slate-800">${food.name}</div>
-                            <div class="text-xs text-slate-500">${food.serving} ${food.unit} • ${food.category}</div>
+                            <div class="font-medium text-slate-800">${escapeHtml(food.name)}</div>
+                            <div class="text-xs text-slate-500">${escapeHtml(food.serving)} ${escapeHtml(food.unit)} • ${escapeHtml(food.category)}</div>
                         </div>
-                        <div class="font-bold text-rose-500">${food.calories} kcal</div>
+                        <div class="font-bold text-rose-500">${parseInt(food.calories)} kcal</div>
                     </div>
                     <div class="flex gap-3 text-xs">
-                        <span class="text-amber-600 font-medium">${food.protein}g P</span>
-                        <span class="text-blue-600 font-medium">${food.carbs}g C</span>
-                        <span class="text-pink-500 font-medium">${food.fat}g F</span>
-                        <span class="text-emerald-600 font-medium">${food.fiber || 0}g Fiber</span>
+                        <span class="text-amber-600 font-medium">${parseFloat(food.protein)}g P</span>
+                        <span class="text-blue-600 font-medium">${parseFloat(food.carbs)}g C</span>
+                        <span class="text-pink-500 font-medium">${parseFloat(food.fat)}g F</span>
+                        <span class="text-emerald-600 font-medium">${parseFloat(food.fiber || 0)}g Fiber</span>
                     </div>
                 </div>
             `).join('');
@@ -2293,7 +3333,8 @@
                 fiber: Math.round(selectedFood.fiber * quantity * 10) / 10
             };
 
-            // Add to local state immediately
+            // Add to local state immediately (ensure array exists)
+            if (!dailyMeals[currentMealType]) dailyMeals[currentMealType] = [];
             dailyMeals[currentMealType].push(mealItem);
             dailyTotals.calories += mealItem.calories;
             dailyTotals.protein += mealItem.protein;
@@ -2305,6 +3346,7 @@
             closeQuantityModal();
             updateMacroDisplay();
             renderTabContent();
+            updateStreakDisplay();
 
             // Save to localStorage as backup
             localStorage.setItem(`fitlife_meals_${selectedDate}`, JSON.stringify({
@@ -2312,27 +3354,132 @@
                 totals: dailyTotals
             }));
 
-            // Sync to database (primary storage)
-            showSyncStatus('syncing');
-            const result = await apiPost('logMeal', mealItem);
-            if (result.success) {
-                // Store the database ID for later deletion
+            // Sync to database (primary storage) with retry
+            await syncToServerWithRetry('logMeal', mealItem, (result) => {
+                // On success, store the database ID for later deletion
                 if (result.id) {
                     const lastIndex = dailyMeals[currentMealType].length - 1;
-                    dailyMeals[currentMealType][lastIndex].id = result.id;
-
-                    // Update localStorage with the ID
-                    localStorage.setItem(`fitlife_meals_${selectedDate}`, JSON.stringify({
-                        meals: dailyMeals,
-                        totals: dailyTotals
-                    }));
+                    if (dailyMeals[currentMealType][lastIndex]) {
+                        dailyMeals[currentMealType][lastIndex].id = result.id;
+                        localStorage.setItem(`fitlife_meals_${selectedDate}`, JSON.stringify({
+                            meals: dailyMeals,
+                            totals: dailyTotals
+                        }));
+                    }
                 }
-                showSyncStatus('success');
-            } else {
-                showSyncStatus('error', result.error || 'Sync failed');
-                console.error('Failed to sync meal:', result.error);
+            });
+        }
+
+        // Sync to server with automatic retry
+        async function syncToServerWithRetry(action, data, onSuccess = null, maxRetries = 3) {
+            showSyncStatus('syncing');
+
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    const result = await apiPost(action, data);
+                    if (result.success) {
+                        showSyncStatus('success');
+                        if (onSuccess) onSuccess(result);
+                        // Remove from pending if it was there
+                        removePendingSync(action, data);
+                        return result;
+                    } else {
+                        console.error(`Sync attempt ${attempt} failed:`, result.error);
+                        if (attempt === maxRetries) {
+                            // All retries failed, add to pending queue
+                            addPendingSync(action, data);
+                            showSyncStatus('error', 'Will retry when online');
+                        }
+                    }
+                } catch (e) {
+                    console.error(`Sync attempt ${attempt} error:`, e);
+                    if (attempt === maxRetries) {
+                        addPendingSync(action, data);
+                        showSyncStatus('error', 'Will retry when online');
+                    }
+                }
+                // Wait before retry (exponential backoff)
+                if (attempt < maxRetries) {
+                    await new Promise(r => setTimeout(r, 1000 * attempt));
+                }
+            }
+            return { success: false };
+        }
+
+        // Add item to pending sync queue
+        function addPendingSync(action, data) {
+            const syncItem = { action, data, timestamp: Date.now() };
+            // Avoid duplicates
+            const exists = pendingSyncs.some(s =>
+                s.action === action && JSON.stringify(s.data) === JSON.stringify(data)
+            );
+            if (!exists) {
+                pendingSyncs.push(syncItem);
+                localStorage.setItem('fitlife_pending_syncs', JSON.stringify(pendingSyncs));
+                updatePendingSyncUI();
             }
         }
+
+        // Remove item from pending sync queue
+        function removePendingSync(action, data) {
+            pendingSyncs = pendingSyncs.filter(s =>
+                !(s.action === action && JSON.stringify(s.data) === JSON.stringify(data))
+            );
+            localStorage.setItem('fitlife_pending_syncs', JSON.stringify(pendingSyncs));
+            updatePendingSyncUI();
+        }
+
+        // Process pending syncs when back online
+        async function processPendingSyncs() {
+            if (pendingSyncs.length === 0) return;
+
+            showSyncStatus('syncing');
+            let synced = 0, failed = 0;
+            const toProcess = [...pendingSyncs];
+
+            for (const item of toProcess) {
+                try {
+                    const result = await apiPost(item.action, item.data);
+                    if (result.success) {
+                        removePendingSync(item.action, item.data);
+                        synced++;
+                    } else {
+                        failed++;
+                    }
+                } catch (e) {
+                    failed++;
+                }
+            }
+
+            if (failed === 0) {
+                showSyncStatus('success');
+            } else {
+                showSyncStatus('error', `${failed} items still pending`);
+            }
+        }
+
+        // Update UI to show pending syncs count
+        function updatePendingSyncUI() {
+            const badge = document.getElementById('pendingSyncBadge');
+            if (badge) {
+                if (pendingSyncs.length > 0) {
+                    badge.textContent = pendingSyncs.length;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
+        }
+
+        // Listen for online/offline events
+        window.addEventListener('online', () => {
+            console.log('Back online, processing pending syncs...');
+            processPendingSyncs();
+        });
+
+        window.addEventListener('offline', () => {
+            console.log('Gone offline');
+        });
 
         // Show sync status toast
         function showSyncStatus(status, message = '') {
@@ -2361,6 +3508,10 @@
         }
 
         async function deleteFood(mealType, index) {
+            if (!isEditMode) {
+                showToast('Unlock edit mode to delete food', 'info');
+                return;
+            }
             const item = dailyMeals[mealType][index];
             if (!item) return;
 
@@ -2382,7 +3533,7 @@
                 totals: dailyTotals
             }));
 
-            // Sync to database - use ID if available (MySQL), otherwise use index (Google Sheets)
+            // Sync deletion to database
             showSyncStatus('syncing');
             let result;
             if (item.id) {
@@ -2404,6 +3555,10 @@
         let editingMealOriginal = null;
 
         function editMealItem(mealType, index) {
+            if (!isEditMode) {
+                showToast('Unlock edit mode to edit food', 'info');
+                return;
+            }
             const item = dailyMeals[mealType][index];
             if (!item) return;
 
@@ -2567,7 +3722,7 @@
             customFood.id = newId;
             foodDatabase.push(customFood);
 
-            // Save to Google Sheets
+            // Save to database
             await apiPost('addCustomFood', { food: customFood });
 
             closeCustomFoodModal();
@@ -2610,6 +3765,10 @@
         }
 
         function editCombo(comboId) {
+            if (!isEditMode) {
+                showToast('Unlock edit mode to edit combo', 'info');
+                return;
+            }
             const combo = savedMealCombos.find(c => c.id === comboId);
             if (!combo) return;
 
@@ -2671,6 +3830,10 @@
         }
 
         async function deleteCombo(comboId) {
+            if (!isEditMode) {
+                showToast('Unlock edit mode to delete combo', 'info');
+                return;
+            }
             const combo = savedMealCombos.find(c => c.id === comboId);
             if (!combo) return;
 
@@ -2723,14 +3886,14 @@
             }
 
             container.innerHTML = results.map(food => `
-                <div class="flex items-center justify-between p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-0" onclick="addFoodToCombo(${food.id})">
+                <div class="flex items-center justify-between p-2 hover:bg-slate-50 cursor-pointer border-b border-slate-100 last:border-0" onclick="addFoodToCombo(${parseInt(food.id)})">
                     <div>
-                        <div class="text-sm font-medium text-slate-700">${food.name}</div>
-                        <div class="text-xs text-slate-400">${food.serving} ${food.unit}</div>
+                        <div class="text-sm font-medium text-slate-700">${escapeHtml(food.name)}</div>
+                        <div class="text-xs text-slate-400">${escapeHtml(food.serving)} ${escapeHtml(food.unit)}</div>
                     </div>
                     <div class="text-right">
-                        <div class="text-xs font-medium text-rose-500">${food.calories} kcal</div>
-                        <div class="text-xs text-slate-400">${food.protein}g P</div>
+                        <div class="text-xs font-medium text-rose-500">${parseInt(food.calories)} kcal</div>
+                        <div class="text-xs text-slate-400">${parseFloat(food.protein)}g P</div>
                     </div>
                 </div>
             `).join('');
@@ -2800,14 +3963,14 @@
             container.innerHTML = newComboItems.map((item, index) => `
                 <div class="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
                     <div class="flex-1 min-w-0">
-                        <div class="text-sm font-medium text-slate-700 truncate">${item.foodName}</div>
+                        <div class="text-sm font-medium text-slate-700 truncate">${escapeHtml(item.foodName)}</div>
                         <div class="text-xs text-slate-400">${Math.round(item.calories * item.quantity)} kcal • ${Math.round(item.protein * item.quantity)}g P</div>
                     </div>
                     <div class="flex items-center gap-1 ml-2">
-                        <button onclick="updateComboItemQty(${index}, -0.5)" class="w-6 h-6 rounded bg-slate-200 hover:bg-slate-300 text-slate-600 text-sm font-bold">-</button>
-                        <span class="text-sm font-medium w-8 text-center">${item.quantity}</span>
-                        <button onclick="updateComboItemQty(${index}, 0.5)" class="w-6 h-6 rounded bg-slate-200 hover:bg-slate-300 text-slate-600 text-sm font-bold">+</button>
-                        <button onclick="removeComboItem(${index})" class="w-6 h-6 rounded bg-red-100 hover:bg-red-200 text-red-600 text-sm ml-1">×</button>
+                        <button onclick="updateComboItemQty(${parseInt(index)}, -0.5)" class="w-6 h-6 rounded bg-slate-200 hover:bg-slate-300 text-slate-600 text-sm font-bold">-</button>
+                        <span class="text-sm font-medium w-8 text-center">${parseFloat(item.quantity)}</span>
+                        <button onclick="updateComboItemQty(${parseInt(index)}, 0.5)" class="w-6 h-6 rounded bg-slate-200 hover:bg-slate-300 text-slate-600 text-sm font-bold">+</button>
+                        <button onclick="removeComboItem(${parseInt(index)})" class="w-6 h-6 rounded bg-red-100 hover:bg-red-200 text-red-600 text-sm ml-1">×</button>
                     </div>
                 </div>
             `).join('');
@@ -2910,8 +4073,24 @@
             editingComboId = null;
         }
 
-        // Load custom combos on startup
-        function loadCustomCombos() {
+        // Load custom combos from database (with localStorage fallback)
+        async function loadCustomCombos() {
+            try {
+                // Try to load from database first
+                const result = await apiGet('getMealCombos', {});
+                if (result.success && result.combos && result.combos.length > 0) {
+                    // Filter out default combos (keep only custom ones with id > 1000 or from DB)
+                    const dbCombos = result.combos.filter(c => c.id > 0);
+                    savedMealCombos.push(...dbCombos);
+                    // Cache to localStorage for offline use
+                    localStorage.setItem('fitlife_custom_combos', JSON.stringify(dbCombos));
+                    return;
+                }
+            } catch (error) {
+                console.warn('Failed to load combos from server, using localStorage fallback:', error);
+            }
+
+            // Fallback to localStorage if database unavailable
             const customCombos = JSON.parse(localStorage.getItem('fitlife_custom_combos')) || [];
             savedMealCombos.push(...customCombos);
         }
@@ -2932,6 +4111,10 @@
         }
 
         async function saveWeight() {
+            if (!isEditMode) {
+                showToast('Unlock edit mode to log weight', 'info');
+                return;
+            }
             const weight = parseFloat(document.getElementById('weightInput').value);
             const date = document.getElementById('weightDate').value;
 
@@ -2951,7 +4134,7 @@
             updateGoalsDisplay();
             closeWeightModal();
 
-            // Sync to Google Sheets
+            // Sync to database
             await apiPost('logWeight', { date, weight });
         }
 
@@ -2974,6 +4157,10 @@
         }
 
         async function saveGoals() {
+            if (!isEditMode) {
+                showToast('Unlock edit mode to save goals', 'info');
+                return;
+            }
             goals = {
                 calories: parseInt(document.getElementById('goalCaloriesInput').value) || 1300,
                 protein: parseInt(document.getElementById('goalProteinInput').value) || 80,
@@ -2988,48 +4175,829 @@
             updateMacroDisplay();
             closeGoalsModal();
 
-            // Sync to Google Sheets
+            // Sync to database
             await apiPost('updateGoals', { goals });
+        }
+
+        // ==================== EDIT MODE ====================
+        function toggleEditMode() {
+            if (isEditMode) {
+                // Lock (exit edit mode)
+                lockEditMode();
+            } else {
+                // Show password modal
+                openPasswordModal();
+            }
+        }
+
+        function openPasswordModal() {
+            document.getElementById('passwordModal').classList.remove('hidden');
+            document.getElementById('passwordModal').classList.add('flex');
+            document.getElementById('editPasswordInput').value = '';
+            document.getElementById('passwordError').classList.add('hidden');
+            document.getElementById('editPasswordInput').focus();
+        }
+
+        function closePasswordModal() {
+            document.getElementById('passwordModal').classList.add('hidden');
+            document.getElementById('passwordModal').classList.remove('flex');
+        }
+
+        async function verifyEditPassword() {
+            const password = document.getElementById('editPasswordInput').value;
+            if (!password) return;
+
+            try {
+                const result = await apiPost('verifyEditPassword', { password });
+                if (result.valid) {
+                    isEditMode = true;
+                    editToken = result.token || 'valid'; // Store token if provided
+                    localStorage.setItem('fitlife_edit_mode', 'true');
+                    // Use sessionStorage for token (cleared on browser close) with 4-hour expiry
+                    sessionStorage.setItem('fitlife_edit_token', editToken);
+                    sessionStorage.setItem('fitlife_edit_token_expiry', String(Date.now() + 4 * 60 * 60 * 1000));
+                    closePasswordModal();
+                    updateEditModeUI();
+                    showToast('Edit mode unlocked!', 'success');
+                } else {
+                    document.getElementById('passwordError').classList.remove('hidden');
+                    document.getElementById('editPasswordInput').select();
+                }
+            } catch (error) {
+                console.error('Password verification error:', error);
+                document.getElementById('passwordError').textContent = 'Connection error. Please try again.';
+                document.getElementById('passwordError').classList.remove('hidden');
+            }
+        }
+
+        function lockEditMode() {
+            isEditMode = false;
+            editToken = null;
+            localStorage.removeItem('fitlife_edit_mode');
+            sessionStorage.removeItem('fitlife_edit_token');
+            sessionStorage.removeItem('fitlife_edit_token_expiry');
+            updateEditModeUI();
+            showToast('Edit mode locked', 'info');
+        }
+
+        function updateEditModeUI() {
+            const toggle = document.getElementById('editModeToggle');
+            const icon = document.getElementById('editModeIcon');
+            const text = document.getElementById('editModeText');
+
+            if (isEditMode) {
+                toggle.classList.remove('bg-white', 'hover:bg-slate-50');
+                toggle.classList.add('bg-gradient-to-r', 'from-emerald-500', 'to-green-500', 'text-white', 'shadow-lg', 'shadow-emerald-500/30');
+                icon.textContent = '🔓';
+                text.textContent = 'Edit Mode';
+                text.classList.remove('text-slate-600');
+                text.classList.add('text-white');
+            } else {
+                toggle.classList.add('bg-white', 'hover:bg-slate-50');
+                toggle.classList.remove('bg-gradient-to-r', 'from-emerald-500', 'to-green-500', 'text-white', 'shadow-lg', 'shadow-emerald-500/30');
+                icon.textContent = '🔒';
+                text.textContent = 'View Only';
+                text.classList.add('text-slate-600');
+                text.classList.remove('text-white');
+            }
+
+            // Show/hide edit-only elements
+            document.querySelectorAll('.edit-only').forEach(el => {
+                el.style.display = isEditMode ? '' : 'none';
+            });
+
+            // Enable/disable edit inputs
+            document.querySelectorAll('.edit-input').forEach(el => {
+                el.disabled = !isEditMode;
+            });
+        }
+
+        // Change Password Modal Functions
+        function openChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.remove('hidden');
+            document.getElementById('changePasswordModal').classList.add('flex');
+            document.getElementById('currentPasswordInput').value = '';
+            document.getElementById('newPasswordInput').value = '';
+            document.getElementById('confirmPasswordInput').value = '';
+            document.getElementById('changePasswordError').classList.add('hidden');
+            document.getElementById('changePasswordSuccess').classList.add('hidden');
+        }
+
+        function closeChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.add('hidden');
+            document.getElementById('changePasswordModal').classList.remove('flex');
+        }
+
+        async function changePassword() {
+            const currentPassword = document.getElementById('currentPasswordInput').value;
+            const newPassword = document.getElementById('newPasswordInput').value;
+            const confirmPassword = document.getElementById('confirmPasswordInput').value;
+
+            // Validate
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                showPasswordError('Please fill in all fields');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showPasswordError('New passwords do not match');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showPasswordError('New password must be at least 6 characters');
+                return;
+            }
+
+            try {
+                const result = await apiPost('changeEditPassword', {
+                    currentPassword,
+                    newPassword
+                });
+
+                if (result.success) {
+                    document.getElementById('changePasswordError').classList.add('hidden');
+                    document.getElementById('changePasswordSuccess').classList.remove('hidden');
+                    setTimeout(() => {
+                        closeChangePasswordModal();
+                    }, 1500);
+                } else {
+                    showPasswordError(result.error || 'Failed to change password');
+                }
+            } catch (error) {
+                showPasswordError('Connection error. Please try again.');
+            }
+        }
+
+        function showPasswordError(message) {
+            const errorEl = document.getElementById('changePasswordError');
+            errorEl.textContent = message;
+            errorEl.classList.remove('hidden');
+            document.getElementById('changePasswordSuccess').classList.add('hidden');
+        }
+
+        // Check edit mode validity on load
+        async function checkEditModeOnLoad() {
+            if (isEditMode && editToken) {
+                // Verify token is still valid
+                try {
+                    const result = await apiPost('verifyEditPassword', { token: editToken });
+                    if (!result.valid) {
+                        // Token invalid, reset edit mode
+                        isEditMode = false;
+                        editToken = null;
+                        localStorage.removeItem('fitlife_edit_mode');
+                        sessionStorage.removeItem('fitlife_edit_token');
+                        sessionStorage.removeItem('fitlife_edit_token_expiry');
+                    }
+                } catch (error) {
+                    // Network error, keep local state
+                    console.log('Could not verify edit mode, keeping local state');
+                }
+            }
+            updateEditModeUI();
+        }
+
+        // ==================== WORKOUT EDITOR ====================
+        let editingWorkoutType = null;
+        let editingExercises = [];
+        let editingExerciseIndex = null;
+
+        async function openWorkoutEditor() {
+            if (!isEditMode) {
+                showToast('Unlock edit mode to edit workouts', 'info');
+                return;
+            }
+
+            // Get current workout type
+            const dayOfWeek = (new Date().getDay() + 6) % 7;
+            editingWorkoutType = workoutSchedule[dayOfWeek]?.type || 'push';
+
+            document.getElementById('workoutEditorTitle').textContent = `✏️ Edit ${workoutSchedule[dayOfWeek]?.name || 'Workout'}`;
+
+            // Load exercises from database
+            try {
+                const result = await apiPost('getWorkoutExercises', { workoutType: editingWorkoutType });
+                if (result.success && result.exercises) {
+                    editingExercises = result.exercises;
+                } else {
+                    // Fall back to local workoutData
+                    editingExercises = workoutDetails[editingWorkoutType]?.exercises?.map((ex, i) => ({
+                        id: null,
+                        exercise_order: i + 1,
+                        name: ex.name,
+                        sets: ex.sets,
+                        reps: ex.reps,
+                        rest: ex.rest,
+                        notes: ex.notes,
+                        calories: ex.calories,
+                        is_challenge: ex.isChallenge ? 1 : 0,
+                        pr_type: ex.prType,
+                        pr_unit: ex.prUnit,
+                        is_rest: ex.isRest ? 1 : 0,
+                        is_optional: ex.isOptional ? 1 : 0
+                    })) || [];
+                }
+            } catch (error) {
+                console.error('Error loading exercises:', error);
+                editingExercises = [];
+            }
+
+            renderExerciseEditorList();
+            document.getElementById('workoutEditorModal').classList.remove('hidden');
+            document.getElementById('workoutEditorModal').classList.add('flex');
+        }
+
+        function closeWorkoutEditor() {
+            document.getElementById('workoutEditorModal').classList.add('hidden');
+            document.getElementById('workoutEditorModal').classList.remove('flex');
+            editingWorkoutType = null;
+            editingExercises = [];
+        }
+
+        function renderExerciseEditorList() {
+            const container = document.getElementById('exerciseEditorList');
+            if (!editingExercises.length) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-slate-400">
+                        <p>No exercises yet</p>
+                        <p class="text-sm">Click "Add Exercise" to get started</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = editingExercises.map((ex, index) => `
+                <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors">
+                    <div class="flex flex-col gap-1">
+                        <button onclick="moveExercise(${index}, -1)" class="p-1 text-slate-400 hover:text-slate-600 ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}" ${index === 0 ? 'disabled' : ''}>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
+                        </button>
+                        <button onclick="moveExercise(${index}, 1)" class="p-1 text-slate-400 hover:text-slate-600 ${index === editingExercises.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}" ${index === editingExercises.length - 1 ? 'disabled' : ''}>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                    </div>
+                    <div class="flex-1">
+                        <div class="font-medium text-slate-800 ${ex.is_rest ? 'text-slate-500 italic' : ''}">${ex.name}</div>
+                        <div class="text-sm text-slate-500">${ex.sets} × ${ex.reps} ${ex.rest !== '—' ? '• Rest: ' + ex.rest : ''}</div>
+                    </div>
+                    <div class="flex gap-2">
+                        ${ex.is_challenge ? '<span class="text-xs px-2 py-1 bg-orange-100 text-orange-600 rounded-full">Challenge</span>' : ''}
+                        ${ex.is_optional ? '<span class="text-xs px-2 py-1 bg-green-100 text-green-600 rounded-full">Optional</span>' : ''}
+                    </div>
+                    <button onclick="editExercise(${index})" class="p-2 text-slate-400 hover:text-blue-500 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    </button>
+                    <button onclick="deleteExerciseFromList(${index})" class="p-2 text-slate-400 hover:text-red-500 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function moveExercise(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= editingExercises.length) return;
+
+            const temp = editingExercises[index];
+            editingExercises[index] = editingExercises[newIndex];
+            editingExercises[newIndex] = temp;
+
+            // Update exercise_order
+            editingExercises.forEach((ex, i) => ex.exercise_order = i + 1);
+
+            renderExerciseEditorList();
+        }
+
+        function addNewExercise() {
+            editingExerciseIndex = null;
+            document.getElementById('exerciseEditTitle').textContent = 'Add Exercise';
+            document.getElementById('exerciseNameInput').value = '';
+            document.getElementById('exerciseSetsInput').value = '3';
+            document.getElementById('exerciseRepsInput').value = '10-15';
+            document.getElementById('exerciseRestInput').value = '30s';
+            document.getElementById('exerciseCaloriesInput').value = '30';
+            document.getElementById('exerciseNotesInput').value = '';
+            document.getElementById('exerciseIsChallengeInput').checked = false;
+            document.getElementById('exerciseIsRestInput').checked = false;
+            document.getElementById('exerciseIsOptionalInput').checked = false;
+            document.getElementById('prTypeSection').classList.add('hidden');
+
+            document.getElementById('exerciseEditModal').classList.remove('hidden');
+            document.getElementById('exerciseEditModal').classList.add('flex');
+        }
+
+        function editExercise(index) {
+            editingExerciseIndex = index;
+            const ex = editingExercises[index];
+
+            document.getElementById('exerciseEditTitle').textContent = 'Edit Exercise';
+            document.getElementById('exerciseNameInput').value = ex.name || '';
+            document.getElementById('exerciseSetsInput').value = ex.sets || '';
+            document.getElementById('exerciseRepsInput').value = ex.reps || '';
+            document.getElementById('exerciseRestInput').value = ex.rest || '';
+            document.getElementById('exerciseCaloriesInput').value = ex.calories || '';
+            document.getElementById('exerciseNotesInput').value = ex.notes || '';
+            document.getElementById('exerciseIsChallengeInput').checked = ex.is_challenge == 1;
+            document.getElementById('exerciseIsRestInput').checked = ex.is_rest == 1;
+            document.getElementById('exerciseIsOptionalInput').checked = ex.is_optional == 1;
+
+            if (ex.is_challenge == 1) {
+                document.getElementById('prTypeSection').classList.remove('hidden');
+                document.getElementById('exercisePrTypeInput').value = ex.pr_type || 'time';
+            } else {
+                document.getElementById('prTypeSection').classList.add('hidden');
+            }
+
+            document.getElementById('exerciseEditModal').classList.remove('hidden');
+            document.getElementById('exerciseEditModal').classList.add('flex');
+        }
+
+        function closeExerciseEditModal() {
+            document.getElementById('exerciseEditModal').classList.add('hidden');
+            document.getElementById('exerciseEditModal').classList.remove('flex');
+            editingExerciseIndex = null;
+        }
+
+        function saveExerciseEdit() {
+            const name = document.getElementById('exerciseNameInput').value.trim();
+            if (!name) {
+                showToast('Please enter an exercise name', 'error');
+                return;
+            }
+
+            const isChallenge = document.getElementById('exerciseIsChallengeInput').checked;
+            const prType = isChallenge ? document.getElementById('exercisePrTypeInput').value : null;
+
+            const exercise = {
+                id: editingExerciseIndex !== null ? editingExercises[editingExerciseIndex].id : null,
+                exercise_order: editingExerciseIndex !== null ? editingExercises[editingExerciseIndex].exercise_order : editingExercises.length + 1,
+                name: name,
+                sets: document.getElementById('exerciseSetsInput').value || '3',
+                reps: document.getElementById('exerciseRepsInput').value || '10',
+                rest: document.getElementById('exerciseRestInput').value || '30s',
+                notes: document.getElementById('exerciseNotesInput').value || '',
+                calories: parseInt(document.getElementById('exerciseCaloriesInput').value) || 0,
+                is_challenge: isChallenge ? 1 : 0,
+                pr_type: prType,
+                pr_unit: prType === 'time' ? 'seconds' : 'reps',
+                is_rest: document.getElementById('exerciseIsRestInput').checked ? 1 : 0,
+                is_optional: document.getElementById('exerciseIsOptionalInput').checked ? 1 : 0
+            };
+
+            if (editingExerciseIndex !== null) {
+                editingExercises[editingExerciseIndex] = exercise;
+            } else {
+                editingExercises.push(exercise);
+            }
+
+            closeExerciseEditModal();
+            renderExerciseEditorList();
+        }
+
+        function deleteExerciseFromList(index) {
+            if (confirm('Delete this exercise?')) {
+                editingExercises.splice(index, 1);
+                editingExercises.forEach((ex, i) => ex.exercise_order = i + 1);
+                renderExerciseEditorList();
+            }
+        }
+
+        async function saveWorkoutChanges() {
+            if (!editingWorkoutType || !editingExercises.length) {
+                showToast('No exercises to save', 'error');
+                return;
+            }
+
+            try {
+                // Save all exercises (creates new, updates existing, deletes removed)
+                const result = await apiPost('saveWorkout', {
+                    workoutType: editingWorkoutType,
+                    exercises: editingExercises
+                });
+
+                if (result.success) {
+                    showToast('Workout saved successfully!', 'success');
+                    closeWorkoutEditor();
+                    // Reload workout data from server
+                    await loadWorkoutData();
+                    // Refresh workout display
+                    renderTabContent();
+                } else {
+                    showToast(result.error || 'Failed to save workout', 'error');
+                }
+            } catch (error) {
+                console.error('Error saving workout:', error);
+                showToast('Connection error. Please try again.', 'error');
+            }
+        }
+
+        // Toggle PR type section based on challenge checkbox
+        document.addEventListener('DOMContentLoaded', () => {
+            const challengeCheckbox = document.getElementById('exerciseIsChallengeInput');
+            if (challengeCheckbox) {
+                challengeCheckbox.addEventListener('change', function() {
+                    document.getElementById('prTypeSection').classList.toggle('hidden', !this.checked);
+                });
+            }
+        });
+
+        // ==================== EXERCISE LIBRARY ====================
+        let exerciseLibraryData = [];
+        let exerciseLibraryCategories = [];
+        let selectedLibraryExercise = null;
+        let librarySearchTimeout = null;
+
+        async function openExerciseLibrary() {
+            document.getElementById('exerciseLibraryModal').classList.remove('hidden');
+            document.getElementById('exerciseLibraryModal').classList.add('flex');
+            document.getElementById('librarySearchInput').value = '';
+
+            // Load categories and exercises
+            await loadExerciseLibraryCategories();
+            await loadExerciseLibrary();
+        }
+
+        function closeExerciseLibrary() {
+            document.getElementById('exerciseLibraryModal').classList.add('hidden');
+            document.getElementById('exerciseLibraryModal').classList.remove('flex');
+        }
+
+        async function loadExerciseLibraryCategories() {
+            try {
+                const result = await apiPost('getExerciseLibraryCategories', {});
+                if (result.success && result.categories) {
+                    exerciseLibraryCategories = result.categories;
+                    const select = document.getElementById('libraryCategoryFilter');
+                    select.innerHTML = '<option value="all">All Categories</option>' +
+                        exerciseLibraryCategories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+                }
+            } catch (error) {
+                console.error('Error loading categories:', error);
+            }
+        }
+
+        async function loadExerciseLibrary(category = 'all', search = '') {
+            try {
+                const result = await apiPost('getExerciseLibrary', { category, search });
+                if (result.success && result.exercises) {
+                    exerciseLibraryData = result.exercises;
+                    renderExerciseLibraryList();
+                }
+            } catch (error) {
+                console.error('Error loading exercise library:', error);
+                document.getElementById('exerciseLibraryList').innerHTML = `
+                    <div class="text-center py-8 text-red-400">
+                        <p>Error loading exercises</p>
+                    </div>
+                `;
+            }
+        }
+
+        function searchExerciseLibrary() {
+            clearTimeout(librarySearchTimeout);
+            librarySearchTimeout = setTimeout(() => {
+                const search = document.getElementById('librarySearchInput').value.trim();
+                const category = document.getElementById('libraryCategoryFilter').value;
+                loadExerciseLibrary(category, search);
+            }, 300);
+        }
+
+        function filterExerciseLibrary() {
+            const search = document.getElementById('librarySearchInput').value.trim();
+            const category = document.getElementById('libraryCategoryFilter').value;
+            loadExerciseLibrary(category, search);
+        }
+
+        function renderExerciseLibraryList() {
+            const container = document.getElementById('exerciseLibraryList');
+
+            if (!exerciseLibraryData.length) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-slate-400">
+                        <p>No exercises found</p>
+                        <p class="text-sm">Try adjusting your search or filters</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Group by category
+            const grouped = {};
+            exerciseLibraryData.forEach(ex => {
+                if (!grouped[ex.category]) grouped[ex.category] = [];
+                grouped[ex.category].push(ex);
+            });
+
+            const categoryColors = {
+                'Chest': 'bg-red-100 text-red-600',
+                'Back': 'bg-blue-100 text-blue-600',
+                'Shoulders': 'bg-purple-100 text-purple-600',
+                'Biceps': 'bg-pink-100 text-pink-600',
+                'Triceps': 'bg-indigo-100 text-indigo-600',
+                'Legs': 'bg-green-100 text-green-600',
+                'Core': 'bg-orange-100 text-orange-600',
+                'Cardio': 'bg-cyan-100 text-cyan-600',
+                'Full Body': 'bg-amber-100 text-amber-600'
+            };
+
+            const difficultyColors = {
+                'Beginner': 'bg-green-100 text-green-600',
+                'Intermediate': 'bg-yellow-100 text-yellow-600',
+                'Advanced': 'bg-red-100 text-red-600'
+            };
+
+            let html = '';
+            for (const [category, exercises] of Object.entries(grouped)) {
+                html += `<div class="mb-3">
+                    <h4 class="text-sm font-semibold text-slate-500 mb-2">${category} (${exercises.length})</h4>
+                    <div class="space-y-2">`;
+
+                exercises.forEach(ex => {
+                    const catColor = categoryColors[ex.category] || 'bg-slate-100 text-slate-600';
+                    const diffColor = difficultyColors[ex.difficulty] || 'bg-slate-100 text-slate-600';
+
+                    html += `
+                        <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer" onclick="showExerciseDetail(${parseInt(ex.id)})">
+                            <div class="flex-1">
+                                <div class="font-medium text-slate-800">${escapeHtml(ex.name)}</div>
+                                <div class="text-xs text-slate-500">${escapeHtml(ex.primaryMuscles || '')} ${ex.equipment ? '• ' + escapeHtml(ex.equipment) : ''}</div>
+                            </div>
+                            <div class="flex gap-2 flex-wrap justify-end">
+                                <span class="text-xs px-2 py-1 ${diffColor} rounded-full">${escapeHtml(ex.difficulty)}</span>
+                            </div>
+                            <button onclick="event.stopPropagation(); quickAddFromLibrary(${parseInt(ex.id)})" class="p-2 text-green-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Quick add">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            </button>
+                        </div>
+                    `;
+                });
+
+                html += '</div></div>';
+            }
+
+            container.innerHTML = html;
+        }
+
+        function showExerciseDetail(exerciseId) {
+            const ex = exerciseLibraryData.find(e => e.id === exerciseId);
+            if (!ex) return;
+
+            selectedLibraryExercise = ex;
+
+            document.getElementById('exerciseDetailName').textContent = ex.name;
+            document.getElementById('exerciseDetailCategory').textContent = ex.category;
+            document.getElementById('exerciseDetailDifficulty').textContent = ex.difficulty;
+            document.getElementById('exerciseDetailType').textContent = ex.type || 'Exercise';
+            document.getElementById('exerciseDetailMuscles').textContent = ex.primaryMuscles || 'N/A';
+            document.getElementById('exerciseDetailSecondary').textContent = ex.secondaryMuscles ? `Also works: ${ex.secondaryMuscles}` : '';
+            document.getElementById('exerciseDetailEquipment').textContent = ex.equipment || 'None';
+            document.getElementById('exerciseDetailSets').textContent = ex.setsRecommended || '3';
+            document.getElementById('exerciseDetailReps').textContent = ex.repsRecommended || '10-12';
+            document.getElementById('exerciseDetailRest').textContent = ex.restSeconds ? `${ex.restSeconds}s` : '60s';
+            document.getElementById('exerciseDetailInstructions').textContent = ex.instructions || 'No instructions available';
+            document.getElementById('exerciseDetailTips').textContent = ex.tips || 'No tips available';
+
+            document.getElementById('exerciseDetailModal').classList.remove('hidden');
+            document.getElementById('exerciseDetailModal').classList.add('flex');
+        }
+
+        function closeExerciseDetail() {
+            document.getElementById('exerciseDetailModal').classList.add('hidden');
+            document.getElementById('exerciseDetailModal').classList.remove('flex');
+            selectedLibraryExercise = null;
+        }
+
+        function addExerciseFromLibrary() {
+            if (!selectedLibraryExercise) return;
+
+            const ex = selectedLibraryExercise;
+            const caloriesPerExercise = Math.round((ex.caloriesPer30Min || 100) / 6); // Rough estimate per exercise
+
+            const exercise = {
+                id: null,
+                exercise_order: editingExercises.length + 1,
+                name: ex.name,
+                sets: ex.setsRecommended || '3',
+                reps: ex.repsRecommended || '10-12',
+                rest: ex.restSeconds ? `${ex.restSeconds}s` : '60s',
+                notes: ex.tips || '',
+                calories: caloriesPerExercise,
+                is_challenge: 0,
+                pr_type: null,
+                pr_unit: null,
+                is_rest: 0,
+                is_optional: 0
+            };
+
+            editingExercises.push(exercise);
+            closeExerciseDetail();
+            closeExerciseLibrary();
+            renderExerciseEditorList();
+            showToast(`Added "${ex.name}" to workout`, 'success');
+        }
+
+        function quickAddFromLibrary(exerciseId) {
+            const ex = exerciseLibraryData.find(e => e.id === exerciseId);
+            if (!ex) return;
+
+            const caloriesPerExercise = Math.round((ex.caloriesPer30Min || 100) / 6);
+
+            const exercise = {
+                id: null,
+                exercise_order: editingExercises.length + 1,
+                name: ex.name,
+                sets: ex.setsRecommended || '3',
+                reps: ex.repsRecommended || '10-12',
+                rest: ex.restSeconds ? `${ex.restSeconds}s` : '60s',
+                notes: ex.tips || '',
+                calories: caloriesPerExercise,
+                is_challenge: 0,
+                pr_type: null,
+                pr_unit: null,
+                is_rest: 0,
+                is_optional: 0
+            };
+
+            editingExercises.push(exercise);
+            renderExerciseEditorList();
+            showToast(`Added "${ex.name}"`, 'success');
         }
 
         // ==================== WATER TRACKER ====================
         let waterCount = 0;
 
-        function setWater(count) {
-            waterCount = count;
+        // New: Adjust water with +/- buttons, immediately saves to DB
+        async function adjustWater(delta) {
+            if (!isEditMode) {
+                showToast('Unlock edit mode to modify water intake', 'info');
+                return;
+            }
+
+            // Optimistically update UI
+            const newCount = Math.max(0, Math.min(20, waterCount + delta)); // Cap at 0-20 glasses (5L)
+            if (newCount === waterCount) return; // No change
+
+            waterCount = newCount;
             updateWaterDisplay();
-            localStorage.setItem(`fitlife_water_${selectedDate}`, waterCount);
+
+            // Save to database using increment for atomic operation
+            try {
+                const result = await apiPost('logWater', {
+                    date: selectedDate,
+                    increment: delta
+                });
+
+                if (result.success) {
+                    // Sync with server value
+                    waterCount = result.glasses;
+                    updateWaterDisplay();
+                    localStorage.setItem(`fitlife_water_${selectedDate}`, waterCount);
+                } else {
+                    // Revert on error
+                    waterCount = waterCount - delta;
+                    updateWaterDisplay();
+                    showToast('Failed to save water intake', 'error');
+                }
+            } catch (error) {
+                console.error('Water save error:', error);
+                // Revert on error
+                waterCount = waterCount - delta;
+                updateWaterDisplay();
+                showToast('Failed to save water intake', 'error');
+            }
+
+            updateStreakDisplay();
         }
 
         function updateWaterDisplay() {
-            const waterCountEl = document.getElementById('waterCount');
-            if (waterCountEl) {
-                waterCountEl.textContent = `${waterCount}/8`;
+            const ml = waterCount * 250;
+            const pct = Math.min(100, (ml / 2000) * 100);
+
+            // Update main water tracker section
+            const waterDisplayEl = document.getElementById('waterDisplay');
+            if (waterDisplayEl) {
+                waterDisplayEl.textContent = ml;
             }
-            document.querySelectorAll('.water-glass').forEach((glass, i) => {
-                if (i < waterCount) {
-                    glass.classList.remove('bg-slate-100');
-                    glass.classList.add('bg-cyan-500', 'text-white');
-                } else {
-                    glass.classList.add('bg-slate-100');
-                    glass.classList.remove('bg-cyan-500', 'text-white');
-                }
-            });
+
+            const waterProgressBar = document.getElementById('waterProgressBar');
+            if (waterProgressBar) {
+                waterProgressBar.style.width = `${pct}%`;
+            }
+
+            // Update water ring in Today's Progress
+            const waterCurrentMl = document.getElementById('waterCurrentMl');
+            if (waterCurrentMl) {
+                waterCurrentMl.textContent = ml;
+            }
+
+            const waterRing = document.getElementById('waterRing');
+            if (waterRing) {
+                const circumference = 220;
+                const offset = circumference - (pct / 100) * circumference;
+                waterRing.style.strokeDashoffset = offset;
+            }
         }
 
-        function loadWater() {
+        async function loadWater() {
+            // Try to load from database first
+            try {
+                const result = await apiGet('getWater', { date: selectedDate });
+                if (result.success && typeof result.glasses !== 'undefined') {
+                    waterCount = result.glasses;
+                    localStorage.setItem(`fitlife_water_${selectedDate}`, waterCount);
+                    updateWaterDisplay();
+                    return;
+                }
+            } catch (error) {
+                console.log('Water API failed, falling back to localStorage');
+            }
+            // Fallback to localStorage
             waterCount = parseInt(localStorage.getItem(`fitlife_water_${selectedDate}`)) || 0;
             updateWaterDisplay();
         }
 
+        // ==================== STREAK TRACKING ====================
+        function hasActivityOnDate(dateStr) {
+            // Check for meals
+            const mealTypes = ['breakfast', 'lunch', 'dinner', 'snacks', 'preworkout', 'postworkout'];
+            for (const mealType of mealTypes) {
+                const meals = JSON.parse(localStorage.getItem(`fitlife_meals_${dateStr}_${mealType}`)) || [];
+                if (meals.length > 0) return true;
+            }
+
+            // Check for water
+            const water = parseInt(localStorage.getItem(`fitlife_water_${dateStr}`)) || 0;
+            if (water > 0) return true;
+
+            // Check for exercises
+            const workout = getWorkoutForDate(dateStr);
+            const workoutData = workoutDetails[workout.type];
+            if (workoutData && workoutData.exercises) {
+                for (let i = 0; i < workoutData.exercises.length; i++) {
+                    if (exerciseChecks[`${dateStr}-${i}`]) return true;
+                }
+            }
+
+            return false;
+        }
+
+        function calculateStreak() {
+            let streak = 0;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            // Start from today and go backwards
+            for (let i = 0; i < 365; i++) { // Max 365 days check
+                const checkDate = new Date(today);
+                checkDate.setDate(checkDate.getDate() - i);
+                const dateStr = checkDate.toISOString().split('T')[0];
+
+                if (hasActivityOnDate(dateStr)) {
+                    streak++;
+                } else if (i > 0) {
+                    // Break on first inactive day (but not today - user might not have logged yet)
+                    break;
+                }
+            }
+
+            return streak;
+        }
+
+        // Global streak variable that gets updated from database
+        let currentStreak = 0;
+
+        async function updateStreakDisplay() {
+            try {
+                // Fetch streak from database
+                const result = await apiGet('getStreak', {});
+                if (result.success) {
+                    currentStreak = result.streak;
+                }
+            } catch (error) {
+                // Fallback to local calculation if API fails
+                currentStreak = calculateStreak();
+            }
+
+            const streakEl = document.getElementById('streakCount');
+            if (streakEl) {
+                streakEl.textContent = `${currentStreak} day${currentStreak !== 1 ? 's' : ''}`;
+            }
+        }
+
         // ==================== EXERCISE TRACKING ====================
         function toggleExercise(dateKey, index) {
+            if (!isEditMode) {
+                showToast('Unlock edit mode to track exercises', 'info');
+                return;
+            }
             const key = `${dateKey}-${index}`;
             exerciseChecks[key] = !exerciseChecks[key];
             localStorage.setItem('fitlife_exercises', JSON.stringify(exerciseChecks));
             renderTabContent();
+            updateStreakDisplay();
 
-            // Sync to Google Sheets
+            // Sync to database
             apiPost('logExercise', {
                 date: dateKey,
                 exerciseIndex: index,
@@ -3038,11 +5006,11 @@
         }
 
         // ==================== PR MODAL ====================
-        function openPrModal(exerciseName, prType, prUnit) {
-            currentPrExercise = { name: exerciseName, type: prType, unit: prUnit };
+        function openPrModal(exerciseName, prType, prUnit, forceUpdate = false) {
+            currentPrExercise = { name: exerciseName, type: prType, unit: prUnit, forceUpdate: forceUpdate };
             document.getElementById('prModal').classList.remove('hidden');
             document.getElementById('prModal').classList.add('flex');
-            document.getElementById('prExerciseName').textContent = exerciseName;
+            document.getElementById('prExerciseName').textContent = forceUpdate ? `Edit: ${exerciseName}` : exerciseName;
             document.getElementById('prLabel').textContent = prType === 'time' ? 'Time (seconds)' : 'Reps completed';
             document.getElementById('prInput').value = prLog[exerciseName]?.value || '';
             document.getElementById('prInput').placeholder = prType === 'time' ? '300' : '45';
@@ -3055,34 +5023,53 @@
         }
 
         function savePr() {
+            if (!isEditMode) {
+                showToast('Unlock edit mode to save PR', 'info');
+                return;
+            }
             if (!currentPrExercise) return;
             const value = parseInt(document.getElementById('prInput').value);
 
             if (value) {
+                // Always save today's attempt
+                const todayKey = `${selectedDate}-${currentPrExercise.name}`;
+                dailyPrAttempts[todayKey] = {
+                    value,
+                    type: currentPrExercise.type
+                };
+                localStorage.setItem('fitlife_daily_pr_attempts', JSON.stringify(dailyPrAttempts));
+
                 const existing = prLog[currentPrExercise.name];
                 const isBetter = !existing ||
                     (currentPrExercise.type === 'time' && value < existing.value) ||
                     (currentPrExercise.type === 'reps' && value > existing.value);
 
-                if (isBetter) {
+                // Save to PR log if it's better OR if forceUpdate (editing mode)
+                if (isBetter || currentPrExercise.forceUpdate) {
+                    // Use selectedDate for the PR date display
+                    const prDate = new Date(selectedDate);
                     prLog[currentPrExercise.name] = {
                         value,
-                        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                        date: prDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
                         type: currentPrExercise.type
                     };
                     localStorage.setItem('fitlife_prs', JSON.stringify(prLog));
 
-                    // Sync to Google Sheets
+                    // Sync to database
                     apiPost('logPR', {
                         exerciseName: currentPrExercise.name,
                         value: value,
-                        prType: currentPrExercise.type
+                        prType: currentPrExercise.type,
+                        achievedDate: prDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                     });
 
                     // Celebrate new PR!
-                    if (typeof confetti !== 'undefined') {
+                    if (isBetter && typeof confetti !== 'undefined') {
                         confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
                     }
+                    showToast('New PR! 🎉', 'success');
+                } else {
+                    showToast('Time logged!', 'success');
                 }
 
                 closePrModal();
@@ -3093,14 +5080,20 @@
         // ==================== LOAD EXERCISE & PR DATA ====================
         async function loadExerciseData() {
             try {
-                const result = await apiGet('getExerciseLog', { date: selectedDate });
+                // Load ALL exercise logs (last 60 days) from database
+                const result = await apiGet('getAllExerciseLogs', {});
                 if (result.success && result.exercises) {
-                    // Merge with localStorage (Google Sheets takes priority)
-                    Object.assign(exerciseChecks, result.exercises);
+                    // Replace with database data (database is source of truth)
+                    exerciseChecks = result.exercises;
                     localStorage.setItem('fitlife_exercises', JSON.stringify(exerciseChecks));
                 }
             } catch (error) {
-                console.warn('Failed to load exercise data:', error);
+                // Fallback to localStorage if offline
+                const cached = localStorage.getItem('fitlife_exercises');
+                if (cached) {
+                    exerciseChecks = JSON.parse(cached);
+                }
+                console.warn('Failed to load exercise data, using cache:', error);
             }
         }
 
@@ -3108,12 +5101,17 @@
             try {
                 const result = await apiGet('getPRLog');
                 if (result.success && result.prs) {
-                    // Update prLog with data from Google Sheets
+                    // Replace with database data (database is source of truth)
                     prLog = result.prs;
                     localStorage.setItem('fitlife_prs', JSON.stringify(prLog));
                 }
             } catch (error) {
-                console.warn('Failed to load PR data:', error);
+                // Fallback to localStorage if offline
+                const cached = localStorage.getItem('fitlife_prs');
+                if (cached) {
+                    prLog = JSON.parse(cached);
+                }
+                console.warn('Failed to load PR data, using cache:', error);
             }
         }
 
@@ -3121,12 +5119,17 @@
             try {
                 const result = await apiGet('getDayTypes');
                 if (result.success && result.dayTypes) {
-                    // Update dayTypes with data from Google Sheets
+                    // Replace with database data (database is source of truth)
                     dayTypes = result.dayTypes;
                     localStorage.setItem('fitlife_day_types', JSON.stringify(dayTypes));
                 }
             } catch (error) {
-                console.warn('Failed to load day types:', error);
+                // Fallback to localStorage if offline
+                const cached = localStorage.getItem('fitlife_day_types');
+                if (cached) {
+                    dayTypes = JSON.parse(cached);
+                }
+                console.warn('Failed to load day types, using cache:', error);
             }
         }
 
@@ -3181,8 +5184,8 @@
                 foodDatabase = getEmbeddedFoodData();
             }
 
-            // Load custom combos from localStorage
-            loadCustomCombos();
+            // Load custom combos from database (async, with localStorage fallback)
+            await loadCustomCombos();
 
             const cachedGoals = localStorage.getItem('fitlife_goals');
             if (cachedGoals) {
@@ -3208,11 +5211,15 @@
             // Render UI immediately with cached data
             renderTabContent();
             loadWater();
+            updateStreakDisplay();
+
+            // Initialize edit mode UI
+            updateEditModeUI();
 
             // Hide any loading banner
             document.getElementById('connectionBanner').classList.add('hidden');
 
-            // Fetch fresh data from Google Sheets in background
+            // Fetch fresh data from database in background
             Promise.all([
                 loadFoodDatabase(),
                 loadGoals(),
@@ -3220,11 +5227,13 @@
                 loadDailyData(),
                 loadExerciseData(),
                 loadPRData(),
-                loadDayTypes()
+                loadDayTypes(),
+                loadWorkoutData()
             ]).then(() => {
                 renderDayNav();
                 renderTabContent();
                 loadWater();
+                updateStreakDisplay();
             });
         }
 
