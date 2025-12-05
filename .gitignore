@@ -31,3 +31,12 @@ backend/import.lock
 *.pem
 *.key
 backend/config.local.php
+
+# Old migration files
+backend/migrate_database_improvements.php
+backend/migrate_meal_type.php
+
+# Planning/Documentation files
+COMPREHENSIVE_TEST_REPORT.md
+IMPLEMENTATION_PLAN.md
+FitLife-Workout-Database.csv
