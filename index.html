@@ -86,6 +86,48 @@
             50% { opacity: 0.5; }
         }
         .water-fill { transition: height 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        /* Water Wave Animation */
+        .water-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 1rem;
+            background: linear-gradient(to right, #ecfeff, #eff6ff);
+            min-height: 70px;
+        }
+        .water-waves {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%;
+            transition: height 0.5s ease-out;
+            overflow: hidden;
+        }
+        .water-waves svg {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 200%;
+            height: 100%;
+            min-height: 70px;
+        }
+        .wave-back {
+            animation: waveMove 3s linear infinite;
+            fill: rgba(6, 182, 212, 0.3);
+        }
+        .wave-front {
+            animation: waveMove 2s linear infinite reverse;
+            fill: rgba(56, 189, 248, 0.4);
+        }
+        @keyframes waveMove {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .water-waves.animating .wave-back,
+        .water-waves.animating .wave-front {
+            animation-duration: 0.5s;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 min-h-screen p-4 md:p-6 font-sans">
@@ -174,7 +216,7 @@
                 </div>
 
                 <div class="rounded-xl overflow-hidden shadow-xl mb-3">
-                    <img id="motiveImage" src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200&h=400&fit=crop&q=80" alt="Motivation" class="w-full h-40 object-cover">
+                    <img id="motiveImage" src="images/push.webp" alt="Motivation" class="w-full h-auto">
                 </div>
 
                 <div class="glass-effect rounded-xl p-3">
@@ -338,34 +380,41 @@
             </div>
         </div>
 
-        <!-- Water Tracker - Simple +/- buttons -->
-        <div class="bg-gradient-to-r from-cyan-50 to-blue-50 rounded-2xl p-4 shadow-sm mb-6 border border-cyan-100" id="waterTrackerSection">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <span class="text-2xl">💧</span>
-                    <div>
-                        <div class="font-semibold text-slate-800">Water Intake</div>
-                        <div class="text-xs text-slate-500">Track your hydration</div>
-                    </div>
-                </div>
-                <div class="flex items-center gap-3">
-                    <button onclick="adjustWater(-1)" class="w-10 h-10 rounded-full bg-white shadow-sm border border-slate-200 text-slate-600 hover:bg-red-50 hover:border-red-200 hover:text-red-500 transition-all font-bold text-xl flex items-center justify-center edit-only">
-                        −
-                    </button>
-                    <div class="text-center min-w-[80px]">
-                        <div class="text-2xl font-bold text-cyan-600" id="waterDisplay">0</div>
-                        <div class="text-xs text-slate-400">/ 2000 ml</div>
-                    </div>
-                    <button onclick="adjustWater(1)" class="w-10 h-10 rounded-full bg-white shadow-sm border border-slate-200 text-slate-600 hover:bg-green-50 hover:border-green-200 hover:text-green-500 transition-all font-bold text-xl flex items-center justify-center edit-only">
-                        +
-                    </button>
-                </div>
+        <!-- Water Tracker - With Wave Animation -->
+        <div class="water-container rounded-2xl shadow-sm mb-6 border border-cyan-100" id="waterTrackerSection">
+            <!-- Animated Water Waves -->
+            <div class="water-waves" id="waterWaves">
+                <svg viewBox="0 0 1200 70" preserveAspectRatio="none">
+                    <!-- Back wave (slower, lighter) -->
+                    <path class="wave-back" d="M0,35 C150,70 350,0 600,35 C850,70 1050,0 1200,35 L1200,70 L0,70 Z M1200,35 C1350,70 1550,0 1800,35 C2050,70 2250,0 2400,35 L2400,70 L1200,70 Z"/>
+                    <!-- Front wave (faster, darker) -->
+                    <path class="wave-front" d="M0,40 C200,10 400,60 600,40 C800,20 1000,55 1200,40 L1200,70 L0,70 Z M1200,40 C1400,10 1600,60 1800,40 C2000,20 2200,55 2400,40 L2400,70 L1200,70 Z"/>
+                </svg>
             </div>
-            <div class="mt-3">
-                <div class="h-2 bg-white rounded-full overflow-hidden">
-                    <div id="waterProgressBar" class="h-full bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full transition-all duration-300" style="width: 0%"></div>
+
+            <!-- Content (above the waves) -->
+            <div class="relative z-10 p-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">💧</span>
+                        <div>
+                            <div class="font-semibold text-slate-800">Water Intake</div>
+                            <div class="text-xs text-slate-500">Each tap = 250ml (1 glass)</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button onclick="adjustWater(-1)" class="w-10 h-10 rounded-full bg-white/80 backdrop-blur shadow-sm border border-slate-200 text-slate-600 hover:bg-red-50 hover:border-red-200 hover:text-red-500 transition-all font-bold text-xl flex items-center justify-center edit-only">
+                            −
+                        </button>
+                        <div class="text-center min-w-[80px]">
+                            <div class="text-2xl font-bold text-cyan-600" id="waterDisplay">0</div>
+                            <div class="text-xs text-slate-400">/ 2000 ml</div>
+                        </div>
+                        <button onclick="adjustWater(1)" class="w-10 h-10 rounded-full bg-white/80 backdrop-blur shadow-sm border border-slate-200 text-slate-600 hover:bg-green-50 hover:border-green-200 hover:text-green-500 transition-all font-bold text-xl flex items-center justify-center edit-only">
+                            +
+                        </button>
+                    </div>
                 </div>
-                <div class="text-xs text-slate-400 text-center mt-1">Each tap = 250ml (1 glass)</div>
             </div>
         </div>
 
@@ -1141,16 +1190,20 @@
         let currentMealType = 'breakfast';
         let selectedFood = null;
 
-        // Motivational Images (High Quality)
-        const motivationalImages = [
-            { url: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200&h=400&fit=crop&q=80', alt: 'Gym motivation' },
-            { url: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=1200&h=400&fit=crop&q=80', alt: 'Running at sunrise' },
-            { url: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=1200&h=400&fit=crop&q=80', alt: 'Workout determination' },
-            { url: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=1200&h=400&fit=crop&q=80', alt: 'Strength training' },
-            { url: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=1200&h=400&fit=crop&q=80', alt: 'Morning run' },
-            { url: 'https://images.unsplash.com/photo-1549060279-7e168fcee0c2?w=1200&h=400&fit=crop&q=80', alt: 'Victory pose' },
-            { url: 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=1200&h=400&fit=crop&q=80', alt: 'Yoga peace' }
-        ];
+        // Workout-specific Images (High Quality WebP) - Desktop and Mobile versions
+        const isMobile = window.innerWidth <= 768;
+        const imgPath = isMobile ? 'images/mobile/' : 'images/';
+        const imgSuffix = isMobile ? '-mobile.webp' : '.webp';
+
+        const workoutImages = {
+            push: { url: `${imgPath}push${imgSuffix}`, alt: 'Push day - Chest and Triceps' },
+            pull: { url: `${imgPath}pull${imgSuffix}`, alt: 'Pull day - Back and Biceps' },
+            legs: { url: `${imgPath}legs${imgSuffix}`, alt: 'Legs day - Squats and Lunges' },
+            upper: { url: `${imgPath}upper${imgSuffix}`, alt: 'Upper body workout' },
+            rest: { url: `${imgPath}rest${imgSuffix}`, alt: 'Rest and recovery - Saturday' },
+            rest2: { url: `${imgPath}rest2${imgSuffix}`, alt: 'Rest and recovery - Sunday' },
+            cardio: { url: `${imgPath}cardio${imgSuffix}`, alt: 'Cardio and running' }
+        };
 
         // Daily Quotes
         const dailyQuotes = [
@@ -2149,8 +2202,18 @@
             document.getElementById('motiveFullDate').textContent = formatDateDisplay(selectedDate);
             document.getElementById('motiveWorkout').textContent = `${workout.emoji} ${workout.name}`;
             document.getElementById('motiveWorkout').className = `px-3 py-1.5 rounded-full text-xs font-semibold ${workout.type === 'rest' ? 'bg-slate-500/50' : 'bg-white/20'}`;
-            document.getElementById('motiveImage').src = motivationalImages[dayOfWeek].url;
-            document.getElementById('motiveImage').alt = motivationalImages[dayOfWeek].alt;
+
+            // Use workout-type specific image (use rest2 for Sunday)
+            let workoutImg;
+            if (workout.type === 'rest') {
+                // dayOfWeek: 5 = Saturday, 6 = Sunday
+                workoutImg = dayOfWeek === 6 ? workoutImages.rest2 : workoutImages.rest;
+            } else {
+                workoutImg = workoutImages[workout.type] || workoutImages.rest;
+            }
+            document.getElementById('motiveImage').src = workoutImg.url;
+            document.getElementById('motiveImage').alt = workoutImg.alt;
+
             document.getElementById('motiveQuote').textContent = dailyQuotes[dayOfWeek].text;
             document.getElementById('motiveAuthor').textContent = dailyQuotes[dayOfWeek].author;
         }
@@ -4839,7 +4902,7 @@
             if (newCount === waterCount) return; // No change
 
             waterCount = newCount;
-            updateWaterDisplay();
+            updateWaterDisplay(true); // Animate the wave
 
             // Save to database using increment for atomic operation
             try {
@@ -4851,26 +4914,26 @@
                 if (result.success) {
                     // Sync with server value
                     waterCount = result.glasses;
-                    updateWaterDisplay();
+                    updateWaterDisplay(false); // No animation on sync
                     localStorage.setItem(`fitlife_water_${selectedDate}`, waterCount);
                 } else {
                     // Revert on error
                     waterCount = waterCount - delta;
-                    updateWaterDisplay();
+                    updateWaterDisplay(true); // Animate revert
                     showToast('Failed to save water intake', 'error');
                 }
             } catch (error) {
                 console.error('Water save error:', error);
                 // Revert on error
                 waterCount = waterCount - delta;
-                updateWaterDisplay();
+                updateWaterDisplay(true); // Animate revert
                 showToast('Failed to save water intake', 'error');
             }
 
             updateStreakDisplay();
         }
 
-        function updateWaterDisplay() {
+        function updateWaterDisplay(animate = false) {
             const ml = waterCount * 250;
             const pct = Math.min(100, (ml / 2000) * 100);
 
@@ -4880,9 +4943,16 @@
                 waterDisplayEl.textContent = ml;
             }
 
-            const waterProgressBar = document.getElementById('waterProgressBar');
-            if (waterProgressBar) {
-                waterProgressBar.style.width = `${pct}%`;
+            // Update water waves (height controls how much water shows)
+            const waterWaves = document.getElementById('waterWaves');
+            if (waterWaves) {
+                waterWaves.style.height = `${pct}%`;
+
+                // Speed up waves briefly on change
+                if (animate) {
+                    waterWaves.classList.add('animating');
+                    setTimeout(() => waterWaves.classList.remove('animating'), 500);
+                }
             }
 
             // Update water ring in Today's Progress
