@@ -2092,7 +2092,10 @@
         function updateWeightDisplay() {
             if (weightHistory.length > 0) {
                 const latest = weightHistory[weightHistory.length - 1];
-                document.getElementById('headerWeight').textContent = latest.weight + ' kg';
+                const headerWeightEl = document.getElementById('headerWeight');
+                if (headerWeightEl) {
+                    headerWeightEl.textContent = latest.weight + ' kg';
+                }
             }
         }
 
