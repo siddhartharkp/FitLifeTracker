@@ -3181,6 +3181,8 @@
                     dailyMeals[currentMealType][lastIndex].id = result.id;
                 } else if (!result.success) {
                     allSynced = false;
+                    // Add to pending sync queue for retry
+                    addPendingSync('logMeal', mealItem);
                 }
             }
 
@@ -3194,7 +3196,7 @@
             if (allSynced) {
                 showSyncStatus('success');
             } else {
-                showSyncStatus('error', 'Some items failed to sync');
+                showSyncStatus('error', `${pendingSyncs.length} item(s) pending sync`);
             }
 
             // Update UI
@@ -3446,6 +3448,11 @@
                     if (result.success) {
                         removePendingSync(item.action, item.data);
                         synced++;
+
+                        // If it was a logMeal, update the local item with the database ID
+                        if (item.action === 'logMeal' && result.id) {
+                            updateLocalMealId(item.data, result.id);
+                        }
                     } else {
                         failed++;
                     }
@@ -3454,11 +3461,41 @@
                 }
             }
 
-            if (failed === 0) {
+            if (synced > 0) {
+                // Reload data from server to ensure consistency
+                await loadDailyData();
+                renderTabContent();
+            }
+
+            if (failed === 0 && synced > 0) {
                 showSyncStatus('success');
-            } else {
+                showToast(`${synced} item(s) synced successfully`, 'success');
+            } else if (failed > 0) {
                 showSyncStatus('error', `${failed} items still pending`);
             }
+        }
+
+        // Update local meal with database ID after successful sync
+        function updateLocalMealId(mealData, dbId) {
+            const mealType = mealData.mealType;
+            const items = dailyMeals[mealType];
+            if (!items) return;
+
+            // Find the matching item and update its ID
+            for (const item of items) {
+                if (item.foodName === mealData.foodName &&
+                    item.date === mealData.date &&
+                    !item.id) {
+                    item.id = dbId;
+                    break;
+                }
+            }
+
+            // Save updated meals to localStorage
+            localStorage.setItem(`fitlife_meals_${selectedDate}`, JSON.stringify({
+                meals: dailyMeals,
+                totals: dailyTotals
+            }));
         }
 
         // Update UI to show pending syncs count
@@ -3477,12 +3514,22 @@
         // Listen for online/offline events
         window.addEventListener('online', () => {
             console.log('Back online, processing pending syncs...');
+            setOfflineMode(false);
             processPendingSyncs();
         });
 
         window.addEventListener('offline', () => {
             console.log('Gone offline');
+            setOfflineMode(true);
         });
+
+        // Periodic retry for pending syncs (every 30 seconds)
+        setInterval(() => {
+            if (!isOffline && pendingSyncs.length > 0) {
+                console.log('Periodic sync retry...');
+                processPendingSyncs();
+            }
+        }, 30000);
 
         // Show sync status toast
         function showSyncStatus(status, message = '') {
@@ -3548,9 +3595,18 @@
             if (result.success) {
                 showSyncStatus('success');
             } else {
-                showSyncStatus('error', 'Delete sync failed');
+                // Add to pending sync queue for retry
+                if (item.id) {
+                    addPendingSync('deleteMeal', { id: item.id });
+                } else {
+                    addPendingSync('deleteMealItem', { date: selectedDate, mealType, index: originalIndex });
+                }
+                showSyncStatus('error', `${pendingSyncs.length} item(s) pending sync`);
             }
         }
+
+        // Store original index before deletion for pending sync
+        let originalIndex = null;
 
         // ==================== EDIT MEAL ITEM ====================
         let editingMealType = null;
@@ -3681,7 +3737,18 @@
             if (result.success) {
                 showSyncStatus('success');
             } else {
-                showSyncStatus('error', 'Update sync failed');
+                // Add to pending sync queue for retry
+                addPendingSync('updateMeal', {
+                    id: item.id,
+                    quantity: item.quantity,
+                    unit: item.unit,
+                    calories: item.calories,
+                    protein: item.protein,
+                    carbs: item.carbs,
+                    fat: item.fat,
+                    fiber: item.fiber
+                });
+                showSyncStatus('error', `${pendingSyncs.length} item(s) pending sync`);
             }
 
             closeEditMealModal();
@@ -5239,7 +5306,63 @@
                 renderTabContent();
                 loadWater();
                 updateStreakDisplay();
+
+                // Sync recovery: check for unsynced items and process pending syncs
+                syncUnsyncedItems();
+                if (pendingSyncs.length > 0) {
+                    console.log(`Found ${pendingSyncs.length} pending syncs, processing...`);
+                    processPendingSyncs();
+                }
+                updatePendingSyncUI();
             });
+        }
+
+        // Sync items that don't have a database ID (failed during initial save)
+        async function syncUnsyncedItems() {
+            let addedToQueue = 0;
+
+            // Check all meal types for items without ID
+            for (const mealType of Object.keys(dailyMeals)) {
+                const items = dailyMeals[mealType];
+                if (!items || !Array.isArray(items)) continue;
+
+                for (const item of items) {
+                    // If item has no ID and isn't already in pendingSyncs, add it
+                    if (!item.id) {
+                        const mealItem = {
+                            date: item.date || selectedDate,
+                            mealType: item.mealType || mealType,
+                            foodId: item.foodId,
+                            foodName: item.foodName,
+                            quantity: item.quantity,
+                            unit: item.unit,
+                            calories: item.calories,
+                            protein: item.protein,
+                            carbs: item.carbs,
+                            fat: item.fat,
+                            fiber: item.fiber
+                        };
+
+                        // Check if not already in queue
+                        const exists = pendingSyncs.some(s =>
+                            s.action === 'logMeal' &&
+                            s.data.foodName === mealItem.foodName &&
+                            s.data.date === mealItem.date &&
+                            s.data.mealType === mealItem.mealType
+                        );
+
+                        if (!exists) {
+                            addPendingSync('logMeal', mealItem);
+                            addedToQueue++;
+                        }
+                    }
+                }
+            }
+
+            if (addedToQueue > 0) {
+                console.log(`Added ${addedToQueue} unsynced items to queue`);
+                showToast(`Found ${addedToQueue} unsynced item(s). Syncing...`, 'info');
+            }
         }
 
         // Check if API URL is configured
