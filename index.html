@@ -3338,41 +3338,35 @@
                 fiber: Math.round(selectedFood.fiber * quantity * 10) / 10
             };
 
-            // Add to local state immediately (ensure array exists)
-            if (!dailyMeals[currentMealType]) dailyMeals[currentMealType] = [];
-            dailyMeals[currentMealType].push(mealItem);
-            dailyTotals.calories += mealItem.calories;
-            dailyTotals.protein += mealItem.protein;
-            dailyTotals.carbs += mealItem.carbs;
-            dailyTotals.fat += mealItem.fat;
-            dailyTotals.fiber += mealItem.fiber;
-
-            // Update UI
+            // Close modal and show saving indicator
             closeQuantityModal();
-            updateMacroDisplay();
-            renderTabContent();
-            updateStreakDisplay();
+            showApiStatus('saving', 'Adding food...');
 
-            // Save to localStorage as backup
-            localStorage.setItem(`fitlife_meals_${selectedDate}`, JSON.stringify({
-                meals: dailyMeals,
-                totals: dailyTotals
-            }));
+            // DATABASE-FIRST: Save to server first
+            const result = await apiPost('logMeal', mealItem);
 
-            // Sync to database (primary storage) with retry
-            await syncToServerWithRetry('logMeal', mealItem, (result) => {
-                // On success, store the database ID for later deletion
-                if (result.id) {
-                    const lastIndex = dailyMeals[currentMealType].length - 1;
-                    if (dailyMeals[currentMealType][lastIndex]) {
-                        dailyMeals[currentMealType][lastIndex].id = result.id;
-                        localStorage.setItem(`fitlife_meals_${selectedDate}`, JSON.stringify({
-                            meals: dailyMeals,
-                            totals: dailyTotals
-                        }));
-                    }
-                }
-            });
+            if (result.success) {
+                // Success - update local state with the database ID
+                mealItem.id = result.id;
+
+                if (!dailyMeals[currentMealType]) dailyMeals[currentMealType] = [];
+                dailyMeals[currentMealType].push(mealItem);
+                dailyTotals.calories += mealItem.calories;
+                dailyTotals.protein += mealItem.protein;
+                dailyTotals.carbs += mealItem.carbs;
+                dailyTotals.fat += mealItem.fat;
+                dailyTotals.fiber += mealItem.fiber;
+
+                // Update UI
+                updateMacroDisplay();
+                renderTabContent();
+                updateStreakDisplay();
+                showApiStatus('success', 'Food added!');
+            } else {
+                // FAILED - Show clear error to user
+                showApiStatus('error', result.error || 'Failed to add food. Please try again.');
+                console.error('API Error:', result);
+            }
         }
 
         // Sync to server with automatic retry
@@ -3604,6 +3598,47 @@
             document.body.appendChild(toast);
         }
 
+        // Clear, visible API status indicator for database-first operations
+        function showApiStatus(status, message) {
+            // Remove existing status
+            const existing = document.getElementById('apiStatusBanner');
+            if (existing) existing.remove();
+
+            const banner = document.createElement('div');
+            banner.id = 'apiStatusBanner';
+            banner.className = 'fixed top-4 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-2xl z-[100] flex items-center gap-3 text-base font-semibold max-w-md';
+
+            if (status === 'saving') {
+                banner.className += ' bg-blue-600 text-white';
+                banner.innerHTML = `
+                    <div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>${message}</span>
+                `;
+            } else if (status === 'success') {
+                banner.className += ' bg-emerald-500 text-white';
+                banner.innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span>${message}</span>
+                `;
+                setTimeout(() => banner.remove(), 2000);
+            } else if (status === 'error') {
+                banner.className += ' bg-red-500 text-white';
+                banner.innerHTML = `
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.remove()" class="ml-2 text-white/80 hover:text-white">✕</button>
+                `;
+                // Keep error visible longer, user can dismiss
+                setTimeout(() => banner.remove(), 8000);
+            }
+
+            document.body.appendChild(banner);
+        }
+
         async function deleteFood(mealType, index) {
             if (!isEditMode) {
                 showToast('Unlock edit mode to delete food', 'info');
@@ -3612,48 +3647,33 @@
             const item = dailyMeals[mealType][index];
             if (!item) return;
 
-            // Remove from local state
-            dailyMeals[mealType].splice(index, 1);
-            dailyTotals.calories -= item.calories;
-            dailyTotals.protein -= item.protein;
-            dailyTotals.carbs -= item.carbs;
-            dailyTotals.fat -= item.fat;
-            dailyTotals.fiber -= item.fiber;
+            // Item must have been saved to database (has ID)
+            if (!item.id) {
+                showApiStatus('error', 'Cannot delete - item not saved to database');
+                return;
+            }
 
-            // Update UI
-            updateMacroDisplay();
-            renderTabContent();
+            // DATABASE-FIRST: Delete from server first
+            showApiStatus('saving', 'Deleting...');
+            const result = await apiPost('deleteMeal', { id: item.id });
 
-            // Save to localStorage
-            localStorage.setItem(`fitlife_meals_${selectedDate}`, JSON.stringify({
-                meals: dailyMeals,
-                totals: dailyTotals
-            }));
+            if (result.success) {
+                // Success - now remove from local state
+                dailyMeals[mealType].splice(index, 1);
+                dailyTotals.calories -= item.calories;
+                dailyTotals.protein -= item.protein;
+                dailyTotals.carbs -= item.carbs;
+                dailyTotals.fat -= item.fat;
+                dailyTotals.fiber -= item.fiber;
 
-            // Sync deletion to database
-            if (item.id) {
-                // Item exists in database, delete from server
-                showSyncStatus('syncing');
-                const result = await apiPost('deleteMeal', { id: item.id });
-
-                if (result.success) {
-                    showSyncStatus('success');
-                } else {
-                    // Add to pending sync queue for retry
-                    addPendingSync('deleteMeal', { id: item.id });
-                    showSyncStatus('error', `${pendingSyncs.length} item(s) pending sync`);
-                }
+                // Update UI
+                updateMacroDisplay();
+                renderTabContent();
+                showApiStatus('success', 'Deleted!');
             } else {
-                // Item was never synced to server (no ID)
-                // Remove it from pending sync queue if it exists there
-                removePendingSync('logMeal', {
-                    foodName: item.foodName,
-                    date: item.date || selectedDate,
-                    mealType: item.mealType || mealType,
-                    calories: item.calories,
-                    protein: item.protein
-                });
-                showSyncStatus('success');
+                // FAILED - Show clear error
+                showApiStatus('error', result.error || 'Failed to delete. Please try again.');
+                console.error('Delete API Error:', result);
             }
         }
 
@@ -3728,6 +3748,13 @@
             const item = dailyMeals[editingMealType][editingMealIndex];
             const original = editingMealOriginal;
 
+            // Item must have been saved to database
+            if (!item.id) {
+                showApiStatus('error', 'Cannot edit - item not saved to database');
+                closeEditMealModal();
+                return;
+            }
+
             // Calculate per-unit macros
             const perUnit = {
                 calories: original.calories / original.quantity,
@@ -3737,70 +3764,54 @@
                 fiber: (original.fiber || 0) / original.quantity
             };
 
-            // Calculate difference for totals update
-            const oldCals = item.calories;
-            const oldProtein = item.protein;
-            const oldCarbs = item.carbs;
-            const oldFat = item.fat;
-            const oldFiber = item.fiber || 0;
+            // Calculate new values
+            const newValues = {
+                quantity: newQuantity,
+                unit: newUnit,
+                calories: Math.round(perUnit.calories * newQuantity),
+                protein: Math.round(perUnit.protein * newQuantity),
+                carbs: Math.round(perUnit.carbs * newQuantity),
+                fat: Math.round(perUnit.fat * newQuantity),
+                fiber: Math.round(perUnit.fiber * newQuantity)
+            };
 
-            // Update item
-            item.quantity = newQuantity;
-            item.unit = newUnit;
-            item.calories = Math.round(perUnit.calories * newQuantity);
-            item.protein = Math.round(perUnit.protein * newQuantity);
-            item.carbs = Math.round(perUnit.carbs * newQuantity);
-            item.fat = Math.round(perUnit.fat * newQuantity);
-            item.fiber = Math.round(perUnit.fiber * newQuantity);
+            // Close modal and show saving indicator
+            closeEditMealModal();
+            showApiStatus('saving', 'Updating...');
 
-            // Update totals
-            dailyTotals.calories += (item.calories - oldCals);
-            dailyTotals.protein += (item.protein - oldProtein);
-            dailyTotals.carbs += (item.carbs - oldCarbs);
-            dailyTotals.fat += (item.fat - oldFat);
-            dailyTotals.fiber += (item.fiber - oldFiber);
-
-            // Update UI
-            updateMacroDisplay();
-            renderTabContent();
-
-            // Save to localStorage
-            localStorage.setItem(`fitlife_meals_${selectedDate}`, JSON.stringify({
-                meals: dailyMeals,
-                totals: dailyTotals
-            }));
-
-            // Sync to database
-            showSyncStatus('syncing');
+            // DATABASE-FIRST: Update server first
             const result = await apiPost('updateMeal', {
                 id: item.id,
-                quantity: item.quantity,
-                unit: item.unit,
-                calories: item.calories,
-                protein: item.protein,
-                carbs: item.carbs,
-                fat: item.fat,
-                fiber: item.fiber
+                ...newValues
             });
 
             if (result.success) {
-                showSyncStatus('success');
-            } else {
-                // Add to pending sync queue for retry
-                addPendingSync('updateMeal', {
-                    id: item.id,
-                    quantity: item.quantity,
-                    unit: item.unit,
-                    calories: item.calories,
-                    protein: item.protein,
-                    carbs: item.carbs,
-                    fat: item.fat,
-                    fiber: item.fiber
-                });
-                showSyncStatus('error', `${pendingSyncs.length} item(s) pending sync`);
-            }
+                // Success - update local state
+                const oldCals = item.calories;
+                const oldProtein = item.protein;
+                const oldCarbs = item.carbs;
+                const oldFat = item.fat;
+                const oldFiber = item.fiber || 0;
 
-            closeEditMealModal();
+                // Update item
+                Object.assign(item, newValues);
+
+                // Update totals
+                dailyTotals.calories += (item.calories - oldCals);
+                dailyTotals.protein += (item.protein - oldProtein);
+                dailyTotals.carbs += (item.carbs - oldCarbs);
+                dailyTotals.fat += (item.fat - oldFat);
+                dailyTotals.fiber += (item.fiber - oldFiber);
+
+                // Update UI
+                updateMacroDisplay();
+                renderTabContent();
+                showApiStatus('success', 'Updated!');
+            } else {
+                // FAILED - Show clear error
+                showApiStatus('error', result.error || 'Failed to update. Please try again.');
+                console.error('Update API Error:', result);
+            }
         }
 
         // ==================== CUSTOM FOOD ====================
