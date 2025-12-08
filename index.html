@@ -3145,10 +3145,14 @@
             const combo = savedMealCombos.find(c => c.id === comboId);
             if (!combo) return;
 
-            showSyncStatus('syncing');
-            let allSynced = true;
+            // Close modal and show saving indicator
+            closeFoodModal();
+            showApiStatus('saving', `Adding ${combo.items.length} items...`);
 
-            // Add each item in the combo
+            let successCount = 0;
+            let failedItems = [];
+
+            // DATABASE-FIRST: Save each item to server first
             for (const item of combo.items) {
                 const mealItem = {
                     date: selectedDate,
@@ -3164,45 +3168,34 @@
                     fiber: item.fiber || 0
                 };
 
-                // Add to local state (ensure array exists)
-                if (!dailyMeals[currentMealType]) dailyMeals[currentMealType] = [];
-                dailyMeals[currentMealType].push(mealItem);
-                dailyTotals.calories += mealItem.calories;
-                dailyTotals.protein += mealItem.protein;
-                dailyTotals.carbs += mealItem.carbs;
-                dailyTotals.fat += mealItem.fat;
-                dailyTotals.fiber += mealItem.fiber;
-
-                // Sync to database
                 const result = await apiPost('logMeal', mealItem);
                 if (result.success && result.id) {
-                    // Store the database ID
-                    const lastIndex = dailyMeals[currentMealType].length - 1;
-                    dailyMeals[currentMealType][lastIndex].id = result.id;
-                } else if (!result.success) {
-                    allSynced = false;
-                    // Add to pending sync queue for retry
-                    addPendingSync('logMeal', mealItem);
+                    // Success - add to local state with database ID
+                    mealItem.id = result.id;
+                    if (!dailyMeals[currentMealType]) dailyMeals[currentMealType] = [];
+                    dailyMeals[currentMealType].push(mealItem);
+                    dailyTotals.calories += mealItem.calories;
+                    dailyTotals.protein += mealItem.protein;
+                    dailyTotals.carbs += mealItem.carbs;
+                    dailyTotals.fat += mealItem.fat;
+                    dailyTotals.fiber += mealItem.fiber;
+                    successCount++;
+                } else {
+                    failedItems.push(item.foodName);
                 }
             }
 
-            // Save to localStorage as backup
-            localStorage.setItem(`fitlife_meals_${selectedDate}`, JSON.stringify({
-                meals: dailyMeals,
-                totals: dailyTotals
-            }));
-
-            // Show sync result
-            if (allSynced) {
-                showSyncStatus('success');
-            } else {
-                showSyncStatus('error', `${pendingSyncs.length} item(s) pending sync`);
-            }
-
             // Update UI
-            closeFoodModal();
             updateMacroDisplay();
             renderTabContent();
+
+            // Show result
+            if (failedItems.length === 0) {
+                showApiStatus('success', `${successCount} items added!`);
+            } else {
+                showApiStatus('error', `Failed to add: ${failedItems.join(', ')}`);
+                console.error('Combo add failed items:', failedItems);
+            }
         }
 
         function closeFoodModal() {
@@ -3831,7 +3824,7 @@
             const calories = parseFloat(document.getElementById('customCalories').value) || 0;
 
             if (!name || !calories) {
-                alert('Please enter at least a name and calories');
+                showApiStatus('error', 'Please enter at least a name and calories');
                 return;
             }
 
@@ -3847,16 +3840,24 @@
                 unit: document.getElementById('customUnit').value
             };
 
-            // Add to local database
-            const newId = foodDatabase.length + 1000;
-            customFood.id = newId;
-            foodDatabase.push(customFood);
-
-            // Save to database
-            await apiPost('addCustomFood', { food: customFood });
-
+            // Close modal and show saving indicator
             closeCustomFoodModal();
-            selectFood(newId);
+            showApiStatus('saving', 'Creating custom food...');
+
+            // DATABASE-FIRST: Save to server first
+            const result = await apiPost('addCustomFood', { food: customFood });
+
+            if (result.success) {
+                // Success - add to local database with server-assigned ID
+                customFood.id = result.id || (foodDatabase.length + 1000);
+                foodDatabase.push(customFood);
+                selectFood(customFood.id);
+                showApiStatus('success', 'Custom food created!');
+            } else {
+                // FAILED - Show clear error
+                showApiStatus('error', result.error || 'Failed to create custom food. Please try again.');
+                console.error('Custom Food API Error:', result);
+            }
         }
 
         // ==================== CREATE COMBO MODAL ====================
@@ -4250,22 +4251,31 @@
 
             if (!weight || !date) return;
 
-            // Update local
-            const existing = weightHistory.findIndex(w => w.date === date);
-            if (existing >= 0) {
-                weightHistory[existing].weight = weight;
-            } else {
-                weightHistory.push({ date, weight });
-                weightHistory.sort((a, b) => new Date(a.date) - new Date(b.date));
-            }
-
-            localStorage.setItem('fitlife_weight', JSON.stringify(weightHistory));
-            updateWeightDisplay();
-            updateGoalsDisplay();
+            // Close modal and show saving indicator
             closeWeightModal();
+            showApiStatus('saving', 'Logging weight...');
 
-            // Sync to database
-            await apiPost('logWeight', { date, weight });
+            // DATABASE-FIRST: Save to server first
+            const result = await apiPost('logWeight', { date, weight });
+
+            if (result.success) {
+                // Success - update local state
+                const existing = weightHistory.findIndex(w => w.date === date);
+                if (existing >= 0) {
+                    weightHistory[existing].weight = weight;
+                } else {
+                    weightHistory.push({ date, weight });
+                    weightHistory.sort((a, b) => new Date(a.date) - new Date(b.date));
+                }
+
+                updateWeightDisplay();
+                updateGoalsDisplay();
+                showApiStatus('success', 'Weight logged!');
+            } else {
+                // FAILED - Show clear error
+                showApiStatus('error', result.error || 'Failed to log weight. Please try again.');
+                console.error('Weight API Error:', result);
+            }
         }
 
         // ==================== GOALS MODAL ====================
@@ -4291,7 +4301,8 @@
                 showToast('Unlock edit mode to save goals', 'info');
                 return;
             }
-            goals = {
+
+            const newGoals = {
                 calories: parseInt(document.getElementById('goalCaloriesInput').value) || 1300,
                 protein: parseInt(document.getElementById('goalProteinInput').value) || 80,
                 carbs: parseInt(document.getElementById('goalCarbsInput').value) || 180,
@@ -4300,13 +4311,24 @@
                 targetWeight: parseFloat(document.getElementById('goalWeightInput').value) || 65
             };
 
-            localStorage.setItem('fitlife_goals', JSON.stringify(goals));
-            updateGoalsDisplay();
-            updateMacroDisplay();
+            // Close modal and show saving indicator
             closeGoalsModal();
+            showApiStatus('saving', 'Saving goals...');
 
-            // Sync to database
-            await apiPost('updateGoals', { goals });
+            // DATABASE-FIRST: Save to server first
+            const result = await apiPost('updateGoals', { goals: newGoals });
+
+            if (result.success) {
+                // Success - update local state
+                goals = newGoals;
+                updateGoalsDisplay();
+                updateMacroDisplay();
+                showApiStatus('success', 'Goals saved!');
+            } else {
+                // FAILED - Show clear error
+                showApiStatus('error', result.error || 'Failed to save goals. Please try again.');
+                console.error('Goals API Error:', result);
+            }
         }
 
         // ==================== EDIT MODE ====================
@@ -4952,21 +4974,17 @@
         // ==================== WATER TRACKER ====================
         let waterCount = 0;
 
-        // New: Adjust water with +/- buttons, immediately saves to DB
+        // Adjust water with +/- buttons - DATABASE-FIRST
         async function adjustWater(delta) {
             if (!isEditMode) {
                 showToast('Unlock edit mode to modify water intake', 'info');
                 return;
             }
 
-            // Optimistically update UI
             const newCount = Math.max(0, Math.min(20, waterCount + delta)); // Cap at 0-20 glasses (5L)
             if (newCount === waterCount) return; // No change
 
-            waterCount = newCount;
-            updateWaterDisplay(true); // Animate the wave
-
-            // Save to database using increment for atomic operation
+            // DATABASE-FIRST: Save to server first
             try {
                 const result = await apiPost('logWater', {
                     date: selectedDate,
@@ -4974,25 +4992,18 @@
                 });
 
                 if (result.success) {
-                    // Sync with server value
+                    // Success - update UI with server's confirmed value
                     waterCount = result.glasses;
-                    updateWaterDisplay(false); // No animation on sync
-                    localStorage.setItem(`fitlife_water_${selectedDate}`, waterCount);
+                    updateWaterDisplay(true); // Animate the wave
+                    updateStreakDisplay();
                 } else {
-                    // Revert on error
-                    waterCount = waterCount - delta;
-                    updateWaterDisplay(true); // Animate revert
-                    showToast('Failed to save water intake', 'error');
+                    // FAILED - Show clear error, don't update UI
+                    showApiStatus('error', result.error || 'Failed to save water intake');
                 }
             } catch (error) {
                 console.error('Water save error:', error);
-                // Revert on error
-                waterCount = waterCount - delta;
-                updateWaterDisplay(true); // Animate revert
-                showToast('Failed to save water intake', 'error');
+                showApiStatus('error', 'Failed to save water intake');
             }
-
-            updateStreakDisplay();
         }
 
         function updateWaterDisplay(animate = false) {
