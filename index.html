@@ -1463,20 +1463,25 @@
         // Day type state (normal, light, cheat) - initialized empty, loaded from database
         let dayTypes = {};
 
-        function setDayType(type) {
+        async function setDayType(type) {
             if (!isEditMode) {
                 showToast('Unlock edit mode to change day type', 'info');
                 return;
             }
-            dayTypes[selectedDate] = type;
-            localStorage.setItem('fitlife_day_types', JSON.stringify(dayTypes));
 
-            // Sync to database
-            apiPost('setDayType', { date: selectedDate, type: type });
+            // DATABASE-FIRST: Save to server first
+            const result = await apiPost('setDayType', { date: selectedDate, type: type });
 
-            // Update UI
-            renderDayNav();
-            renderTabContent();
+            if (result.success) {
+                // Success - update local state
+                dayTypes[selectedDate] = type;
+                // Update UI
+                renderDayNav();
+                renderTabContent();
+            } else {
+                showApiStatus('error', result.error || 'Failed to change day type');
+                console.error('Day Type API Error:', result);
+            }
         }
 
         function getDayTypeLabel(type) {
@@ -3970,23 +3975,25 @@
 
             if (!confirm(`Delete "${combo.name}" combo?`)) return;
 
-            // Remove from array
-            const index = savedMealCombos.findIndex(c => c.id === comboId);
-            if (index > -1) {
-                savedMealCombos.splice(index, 1);
+            // DATABASE-FIRST: Delete from server first
+            showApiStatus('saving', 'Deleting combo...');
+            const result = await apiPost('deleteMealCombo', { id: comboId });
+
+            if (result.success) {
+                // Success - remove from local array
+                const index = savedMealCombos.findIndex(c => c.id === comboId);
+                if (index > -1) {
+                    savedMealCombos.splice(index, 1);
+                }
+
+                // Close preview and re-render
+                switchFoodModalTab('combos');
+                renderQuickCombos();
+                showApiStatus('success', 'Combo deleted!');
+            } else {
+                showApiStatus('error', result.error || 'Failed to delete combo');
+                console.error('Delete Combo API Error:', result);
             }
-
-            // Save to localStorage
-            localStorage.setItem('fitlife_custom_combos', JSON.stringify(
-                savedMealCombos.filter(c => c.id > 1000)
-            ));
-
-            // Sync delete to server
-            await apiPost('deleteMealCombo', { id: comboId });
-
-            // Close preview and re-render
-            switchFoodModalTab('combos');
-            renderQuickCombos();
         }
 
         function toggleEmojiPicker() {
@@ -4173,32 +4180,33 @@
                 totalFiber: Math.round(totals.fiber)
             };
 
-            if (editingComboId) {
-                // Update existing combo
-                const index = savedMealCombos.findIndex(c => c.id === editingComboId);
-                if (index > -1) {
-                    savedMealCombos[index] = comboData;
-                }
-            } else {
-                // Add new combo
-                savedMealCombos.push(comboData);
-            }
-
-            // Save to localStorage
-            localStorage.setItem('fitlife_custom_combos', JSON.stringify(
-                savedMealCombos.filter(c => c.id > 1000) // Only save custom combos
-            ));
-
-            // Sync to server
-            await apiPost('saveMealCombo', { combo: comboData });
-
+            // Close modal and show saving indicator
             closeCreateComboModal();
+            showApiStatus('saving', editingComboId ? 'Updating combo...' : 'Saving combo...');
 
-            // Re-render combos
-            renderQuickCombos();
+            // DATABASE-FIRST: Save to server first
+            const result = await apiPost('saveMealCombo', { combo: comboData });
 
-            // Show success message
-            alert(editingComboId ? 'Combo updated!' : 'Combo saved!');
+            if (result.success) {
+                // Success - update local state
+                if (editingComboId) {
+                    const index = savedMealCombos.findIndex(c => c.id === editingComboId);
+                    if (index > -1) {
+                        savedMealCombos[index] = comboData;
+                    }
+                } else {
+                    // Use server-assigned ID if available
+                    if (result.id) comboData.id = result.id;
+                    savedMealCombos.push(comboData);
+                }
+
+                // Re-render combos
+                renderQuickCombos();
+                showApiStatus('success', editingComboId ? 'Combo updated!' : 'Combo saved!');
+            } else {
+                showApiStatus('error', result.error || 'Failed to save combo');
+                console.error('Save Combo API Error:', result);
+            }
 
             // Reset editing state
             editingComboId = null;
@@ -5129,23 +5137,30 @@
         }
 
         // ==================== EXERCISE TRACKING ====================
-        function toggleExercise(dateKey, index) {
+        async function toggleExercise(dateKey, index) {
             if (!isEditMode) {
                 showToast('Unlock edit mode to track exercises', 'info');
                 return;
             }
             const key = `${dateKey}-${index}`;
-            exerciseChecks[key] = !exerciseChecks[key];
-            localStorage.setItem('fitlife_exercises', JSON.stringify(exerciseChecks));
-            renderTabContent();
-            updateStreakDisplay();
+            const newValue = !exerciseChecks[key];
 
-            // Sync to database
-            apiPost('logExercise', {
+            // DATABASE-FIRST: Save to server first
+            const result = await apiPost('logExercise', {
                 date: dateKey,
                 exerciseIndex: index,
-                completed: exerciseChecks[key]
+                completed: newValue
             });
+
+            if (result.success) {
+                // Success - update local state
+                exerciseChecks[key] = newValue;
+                renderTabContent();
+                updateStreakDisplay();
+            } else {
+                showApiStatus('error', result.error || 'Failed to save exercise');
+                console.error('Exercise API Error:', result);
+            }
         }
 
         // ==================== PR MODAL ====================
@@ -5165,7 +5180,7 @@
             currentPrExercise = null;
         }
 
-        function savePr() {
+        async function savePr() {
             if (!isEditMode) {
                 showToast('Unlock edit mode to save PR', 'info');
                 return;
@@ -5173,50 +5188,55 @@
             if (!currentPrExercise) return;
             const value = parseInt(document.getElementById('prInput').value);
 
-            if (value) {
-                // Always save today's attempt
+            if (!value) return;
+
+            const prDate = new Date(selectedDate);
+            const achievedDate = prDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const existing = prLog[currentPrExercise.name];
+            const isBetter = !existing ||
+                (currentPrExercise.type === 'time' && value < existing.value) ||
+                (currentPrExercise.type === 'reps' && value > existing.value);
+
+            // Close modal and show saving indicator
+            closePrModal();
+            showApiStatus('saving', 'Saving PR...');
+
+            // DATABASE-FIRST: Save to server first
+            const result = await apiPost('logPR', {
+                exerciseName: currentPrExercise.name,
+                value: value,
+                prType: currentPrExercise.type,
+                achievedDate: achievedDate
+            });
+
+            if (result.success) {
+                // Success - update local state
                 const todayKey = `${selectedDate}-${currentPrExercise.name}`;
                 dailyPrAttempts[todayKey] = {
                     value,
                     type: currentPrExercise.type
                 };
-                localStorage.setItem('fitlife_daily_pr_attempts', JSON.stringify(dailyPrAttempts));
 
-                const existing = prLog[currentPrExercise.name];
-                const isBetter = !existing ||
-                    (currentPrExercise.type === 'time' && value < existing.value) ||
-                    (currentPrExercise.type === 'reps' && value > existing.value);
-
-                // Save to PR log if it's better OR if forceUpdate (editing mode)
                 if (isBetter || currentPrExercise.forceUpdate) {
-                    // Use selectedDate for the PR date display
-                    const prDate = new Date(selectedDate);
                     prLog[currentPrExercise.name] = {
                         value,
-                        date: prDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                        date: achievedDate,
                         type: currentPrExercise.type
                     };
-                    localStorage.setItem('fitlife_prs', JSON.stringify(prLog));
-
-                    // Sync to database
-                    apiPost('logPR', {
-                        exerciseName: currentPrExercise.name,
-                        value: value,
-                        prType: currentPrExercise.type,
-                        achievedDate: prDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                    });
 
                     // Celebrate new PR!
                     if (isBetter && typeof confetti !== 'undefined') {
                         confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
                     }
-                    showToast('New PR! 🎉', 'success');
+                    showApiStatus('success', 'New PR! 🎉');
                 } else {
-                    showToast('Time logged!', 'success');
+                    showApiStatus('success', 'Time logged!');
                 }
 
-                closePrModal();
                 renderTabContent();
+            } else {
+                showApiStatus('error', result.error || 'Failed to save PR');
+                console.error('PR API Error:', result);
             }
         }
 
