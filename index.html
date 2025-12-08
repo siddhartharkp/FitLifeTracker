@@ -2085,7 +2085,10 @@
 
             if (weightHistory.length > 0) {
                 const currentWeight = weightHistory[weightHistory.length - 1].weight;
-                document.getElementById('goalBadge').textContent = `${currentWeight} → ${goals.targetWeight} kg`;
+                const goalBadgeEl = document.getElementById('goalBadge');
+                if (goalBadgeEl) {
+                    goalBadgeEl.textContent = `${currentWeight} → ${goals.targetWeight} kg`;
+                }
             }
         }
 

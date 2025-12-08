@@ -80,6 +80,10 @@ switch ($action) {
         getWeightHistory();
         break;
 
+    case 'deleteWeight':
+        deleteWeight($input);
+        break;
+
     // ==================== EXERCISE ====================
     case 'logExercise':
         logExercise($input);
@@ -710,6 +714,29 @@ function getWeightHistory() {
     } catch (PDOException $e) {
         logError('getWeightHistory failed: ' . $e->getMessage());
         jsonResponse(['success' => false, 'error' => 'Failed to load weight history'], 500);
+    }
+}
+
+function deleteWeight($data) {
+    // Validate
+    if (!validateDate($data['date'] ?? '')) {
+        jsonResponse(['success' => false, 'error' => 'Invalid date'], 400);
+        return;
+    }
+
+    try {
+        $db = getDB();
+        $stmt = $db->prepare("DELETE FROM weight_log WHERE date = ?");
+        $stmt->execute([$data['date']]);
+
+        if ($stmt->rowCount() > 0) {
+            jsonResponse(['success' => true]);
+        } else {
+            jsonResponse(['success' => false, 'error' => 'No entry found for this date'], 404);
+        }
+    } catch (PDOException $e) {
+        logError('deleteWeight failed: ' . $e->getMessage(), ['data' => $data]);
+        jsonResponse(['success' => false, 'error' => 'Failed to delete weight entry'], 500);
     }
 }
 
