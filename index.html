@@ -3434,10 +3434,15 @@
             updatePendingSyncUI();
         }
 
+        // Mutex to prevent concurrent sync operations
+        let isSyncInProgress = false;
+
         // Process pending syncs when back online
         async function processPendingSyncs() {
-            if (pendingSyncs.length === 0) return;
+            // Prevent concurrent execution
+            if (pendingSyncs.length === 0 || isSyncInProgress) return;
 
+            isSyncInProgress = true;
             showSyncStatus('syncing');
             let synced = 0, failed = 0;
             const toProcess = [...pendingSyncs];
@@ -3473,6 +3478,9 @@
             } else if (failed > 0) {
                 showSyncStatus('error', `${failed} items still pending`);
             }
+
+            // Release the mutex
+            isSyncInProgress = false;
         }
 
         // Update local meal with database ID after successful sync
@@ -3481,21 +3489,60 @@
             const items = dailyMeals[mealType];
             if (!items) return;
 
-            // Find the matching item and update its ID
+            // Find the matching item using ALL fields for exact identification
+            // This prevents issues when same food is added multiple times
             for (const item of items) {
                 if (item.foodName === mealData.foodName &&
                     item.date === mealData.date &&
+                    item.calories === mealData.calories &&
+                    item.protein === mealData.protein &&
+                    item.quantity === mealData.quantity &&
                     !item.id) {
                     item.id = dbId;
                     break;
                 }
             }
 
-            // Save updated meals to localStorage
-            localStorage.setItem(`fitlife_meals_${selectedDate}`, JSON.stringify({
+            // Save updated meals to localStorage with error handling
+            safeLocalStorageSet(`fitlife_meals_${selectedDate}`, JSON.stringify({
                 meals: dailyMeals,
                 totals: dailyTotals
             }));
+        }
+
+        // Safe localStorage setter with quota handling
+        function safeLocalStorageSet(key, value) {
+            try {
+                localStorage.setItem(key, value);
+                return true;
+            } catch (e) {
+                if (e.name === 'QuotaExceededError') {
+                    console.error('localStorage quota exceeded, clearing old data...');
+                    // Clear meal data older than 7 days
+                    const now = new Date();
+                    const keys = Object.keys(localStorage);
+                    for (const k of keys) {
+                        if (k.startsWith('fitlife_meals_')) {
+                            const dateStr = k.replace('fitlife_meals_', '');
+                            const daysDiff = Math.floor((now - new Date(dateStr)) / (1000 * 60 * 60 * 24));
+                            if (daysDiff > 7) {
+                                localStorage.removeItem(k);
+                            }
+                        }
+                    }
+                    // Retry after cleanup
+                    try {
+                        localStorage.setItem(key, value);
+                        return true;
+                    } catch (retryError) {
+                        console.error('Still failed after cleanup:', retryError);
+                        showToast('Storage full - some data may not be saved', 'warning');
+                        return false;
+                    }
+                }
+                console.error('localStorage error:', e);
+                return false;
+            }
         }
 
         // Update UI to show pending syncs count
@@ -3584,29 +3631,31 @@
             }));
 
             // Sync deletion to database
-            showSyncStatus('syncing');
-            let result;
             if (item.id) {
-                result = await apiPost('deleteMeal', { id: item.id });
-            } else {
-                result = await apiPost('deleteMealItem', { date: selectedDate, rowIndex: index });
-            }
+                // Item exists in database, delete from server
+                showSyncStatus('syncing');
+                const result = await apiPost('deleteMeal', { id: item.id });
 
-            if (result.success) {
-                showSyncStatus('success');
-            } else {
-                // Add to pending sync queue for retry
-                if (item.id) {
-                    addPendingSync('deleteMeal', { id: item.id });
+                if (result.success) {
+                    showSyncStatus('success');
                 } else {
-                    addPendingSync('deleteMealItem', { date: selectedDate, mealType, index: originalIndex });
+                    // Add to pending sync queue for retry
+                    addPendingSync('deleteMeal', { id: item.id });
+                    showSyncStatus('error', `${pendingSyncs.length} item(s) pending sync`);
                 }
-                showSyncStatus('error', `${pendingSyncs.length} item(s) pending sync`);
+            } else {
+                // Item was never synced to server (no ID)
+                // Remove it from pending sync queue if it exists there
+                removePendingSync('logMeal', {
+                    foodName: item.foodName,
+                    date: item.date || selectedDate,
+                    mealType: item.mealType || mealType,
+                    calories: item.calories,
+                    protein: item.protein
+                });
+                showSyncStatus('success');
             }
         }
-
-        // Store original index before deletion for pending sync
-        let originalIndex = null;
 
         // ==================== EDIT MEAL ITEM ====================
         let editingMealType = null;
