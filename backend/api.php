@@ -198,6 +198,10 @@ switch ($action) {
         getExerciseLibraryCategories();
         break;
 
+    case 'addToExerciseLibrary':
+        addToExerciseLibrary($input);
+        break;
+
     default:
         logError('Unknown action attempted', ['action' => $action]);
         jsonResponse(['success' => false, 'error' => 'Invalid request'], 400);
@@ -1948,5 +1952,45 @@ function getExerciseLibraryCategories() {
     } catch (PDOException $e) {
         logError('getExerciseLibraryCategories failed: ' . $e->getMessage());
         jsonResponse(['success' => false, 'error' => 'Failed to load categories'], 500);
+    }
+}
+
+function addToExerciseLibrary($data) {
+    $name = sanitizeString($data['name'] ?? '', 255);
+    if (empty($name)) {
+        jsonResponse(['success' => false, 'error' => 'Exercise name is required'], 400);
+        return;
+    }
+
+    try {
+        $db = getDB();
+
+        $stmt = $db->prepare("
+            INSERT INTO exercise_library
+            (name, category, type, primary_muscles, secondary_muscles, equipment, difficulty,
+             calories_per_30min, sets_recommended, reps_recommended, rest_seconds, instructions, tips)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+
+        $stmt->execute([
+            $name,
+            sanitizeString($data['category'] ?? 'Cardio', 50),
+            sanitizeString($data['type'] ?? 'Cardio', 50),
+            sanitizeString($data['primaryMuscles'] ?? '', 255),
+            sanitizeString($data['secondaryMuscles'] ?? '', 255),
+            sanitizeString($data['equipment'] ?? 'None', 100),
+            sanitizeString($data['difficulty'] ?? 'Beginner', 50),
+            intval($data['caloriesPer30Min'] ?? 100),
+            sanitizeString($data['setsRecommended'] ?? '—', 50),
+            sanitizeString($data['repsRecommended'] ?? '20-30 min', 50),
+            intval($data['restSeconds'] ?? 0),
+            sanitizeString($data['instructions'] ?? '', 1000),
+            sanitizeString($data['tips'] ?? '', 500)
+        ]);
+
+        jsonResponse(['success' => true, 'id' => $db->lastInsertId()]);
+    } catch (PDOException $e) {
+        logError('addToExerciseLibrary failed: ' . $e->getMessage(), ['data' => $data]);
+        jsonResponse(['success' => false, 'error' => 'Failed to add exercise to library'], 500);
     }
 }
