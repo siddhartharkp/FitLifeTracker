@@ -923,7 +923,22 @@
                            class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
                            placeholder="e.g., Push-ups">
                 </div>
-                <div class="grid grid-cols-2 gap-3">
+                <!-- Exercise Type Toggle -->
+                <div>
+                    <label class="block text-sm text-slate-500 mb-2">Exercise Type</label>
+                    <div class="flex gap-2">
+                        <button type="button" id="typeStrengthBtn" onclick="setExerciseType('strength')"
+                                class="flex-1 py-2 px-3 rounded-xl text-sm font-semibold transition-all bg-orange-500 text-white">
+                            Strength
+                        </button>
+                        <button type="button" id="typeCardioBtn" onclick="setExerciseType('cardio')"
+                                class="flex-1 py-2 px-3 rounded-xl text-sm font-semibold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200">
+                            Cardio
+                        </button>
+                    </div>
+                </div>
+                <!-- Strength Fields (Sets/Reps) -->
+                <div id="strengthFields" class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-sm text-slate-500 mb-1">Sets</label>
                         <input type="text" id="exerciseSetsInput"
@@ -937,8 +952,23 @@
                                placeholder="10-15">
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-3">
+                <!-- Cardio Fields (Duration/Distance) -->
+                <div id="cardioFields" class="hidden grid grid-cols-2 gap-3">
                     <div>
+                        <label class="block text-sm text-slate-500 mb-1">Duration</label>
+                        <input type="text" id="exerciseDurationInput"
+                               class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                               placeholder="20 min">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-500 mb-1">Distance (optional)</label>
+                        <input type="text" id="exerciseDistanceInput"
+                               class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
+                               placeholder="2 km">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div id="restFieldContainer">
                         <label class="block text-sm text-slate-500 mb-1">Rest</label>
                         <input type="text" id="exerciseRestInput"
                                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500"
@@ -4630,12 +4660,40 @@
             renderExerciseEditorList();
         }
 
+        // Track current exercise type in the form
+        let currentExerciseType = 'strength';
+
+        function setExerciseType(type) {
+            currentExerciseType = type;
+            const strengthBtn = document.getElementById('typeStrengthBtn');
+            const cardioBtn = document.getElementById('typeCardioBtn');
+            const strengthFields = document.getElementById('strengthFields');
+            const cardioFields = document.getElementById('cardioFields');
+            const restFieldContainer = document.getElementById('restFieldContainer');
+
+            if (type === 'strength') {
+                strengthBtn.className = 'flex-1 py-2 px-3 rounded-xl text-sm font-semibold transition-all bg-orange-500 text-white';
+                cardioBtn.className = 'flex-1 py-2 px-3 rounded-xl text-sm font-semibold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200';
+                strengthFields.classList.remove('hidden');
+                cardioFields.classList.add('hidden');
+                restFieldContainer.classList.remove('hidden');
+            } else {
+                cardioBtn.className = 'flex-1 py-2 px-3 rounded-xl text-sm font-semibold transition-all bg-green-500 text-white';
+                strengthBtn.className = 'flex-1 py-2 px-3 rounded-xl text-sm font-semibold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200';
+                strengthFields.classList.add('hidden');
+                cardioFields.classList.remove('hidden');
+                restFieldContainer.classList.add('hidden');
+            }
+        }
+
         function addNewExercise() {
             editingExerciseIndex = null;
             document.getElementById('exerciseEditTitle').textContent = 'Add Exercise';
             document.getElementById('exerciseNameInput').value = '';
             document.getElementById('exerciseSetsInput').value = '3';
             document.getElementById('exerciseRepsInput').value = '10-15';
+            document.getElementById('exerciseDurationInput').value = '';
+            document.getElementById('exerciseDistanceInput').value = '';
             document.getElementById('exerciseRestInput').value = '30s';
             document.getElementById('exerciseCaloriesInput').value = '30';
             document.getElementById('exerciseNotesInput').value = '';
@@ -4643,6 +4701,7 @@
             document.getElementById('exerciseIsRestInput').checked = false;
             document.getElementById('exerciseIsOptionalInput').checked = false;
             document.getElementById('prTypeSection').classList.add('hidden');
+            setExerciseType('strength');
 
             document.getElementById('exerciseEditModal').classList.remove('hidden');
             document.getElementById('exerciseEditModal').classList.add('flex');
@@ -4654,14 +4713,29 @@
 
             document.getElementById('exerciseEditTitle').textContent = 'Edit Exercise';
             document.getElementById('exerciseNameInput').value = ex.name || '';
-            document.getElementById('exerciseSetsInput').value = ex.sets || '';
-            document.getElementById('exerciseRepsInput').value = ex.reps || '';
-            document.getElementById('exerciseRestInput').value = ex.rest || '';
             document.getElementById('exerciseCaloriesInput').value = ex.calories || '';
             document.getElementById('exerciseNotesInput').value = ex.notes || '';
             document.getElementById('exerciseIsChallengeInput').checked = ex.is_challenge == 1;
             document.getElementById('exerciseIsRestInput').checked = ex.is_rest == 1;
             document.getElementById('exerciseIsOptionalInput').checked = ex.is_optional == 1;
+
+            // Detect if this is a cardio exercise (sets is '—' or reps contains 'min')
+            const isCardio = ex.sets === '—' || ex.sets === '-' || (ex.reps && ex.reps.includes('min'));
+
+            if (isCardio) {
+                setExerciseType('cardio');
+                document.getElementById('exerciseDurationInput').value = ex.reps || '';
+                document.getElementById('exerciseDistanceInput').value = ex.distance || '';
+                document.getElementById('exerciseSetsInput').value = '';
+                document.getElementById('exerciseRepsInput').value = '';
+            } else {
+                setExerciseType('strength');
+                document.getElementById('exerciseSetsInput').value = ex.sets || '';
+                document.getElementById('exerciseRepsInput').value = ex.reps || '';
+                document.getElementById('exerciseDurationInput').value = '';
+                document.getElementById('exerciseDistanceInput').value = '';
+            }
+            document.getElementById('exerciseRestInput').value = ex.rest || '';
 
             if (ex.is_challenge == 1) {
                 document.getElementById('prTypeSection').classList.remove('hidden');
@@ -4690,13 +4764,30 @@
             const isChallenge = document.getElementById('exerciseIsChallengeInput').checked;
             const prType = isChallenge ? document.getElementById('exercisePrTypeInput').value : null;
 
+            let sets, reps, rest, distance;
+
+            if (currentExerciseType === 'cardio') {
+                // Cardio exercise: use duration as reps, sets as '—'
+                sets = '—';
+                reps = document.getElementById('exerciseDurationInput').value || '20 min';
+                rest = '—';
+                distance = document.getElementById('exerciseDistanceInput').value || '';
+            } else {
+                // Strength exercise: use normal sets/reps
+                sets = document.getElementById('exerciseSetsInput').value || '3';
+                reps = document.getElementById('exerciseRepsInput').value || '10';
+                rest = document.getElementById('exerciseRestInput').value || '30s';
+                distance = '';
+            }
+
             const exercise = {
                 id: editingExerciseIndex !== null ? editingExercises[editingExerciseIndex].id : null,
                 exercise_order: editingExerciseIndex !== null ? editingExercises[editingExerciseIndex].exercise_order : editingExercises.length + 1,
                 name: name,
-                sets: document.getElementById('exerciseSetsInput').value || '3',
-                reps: document.getElementById('exerciseRepsInput').value || '10',
-                rest: document.getElementById('exerciseRestInput').value || '30s',
+                sets: sets,
+                reps: reps,
+                rest: rest,
+                distance: distance,
                 notes: document.getElementById('exerciseNotesInput').value || '',
                 calories: parseInt(document.getElementById('exerciseCaloriesInput').value) || 0,
                 is_challenge: isChallenge ? 1 : 0,
