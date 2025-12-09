@@ -4560,11 +4560,11 @@
                 return;
             }
 
-            // Get current workout type
-            const dayOfWeek = (new Date().getDay() + 6) % 7;
-            editingWorkoutType = workoutSchedule[dayOfWeek]?.type || 'push';
+            // Get workout type for the SELECTED date (not today)
+            const workout = getWorkoutForDate(selectedDate);
+            editingWorkoutType = workout?.type || 'push';
 
-            document.getElementById('workoutEditorTitle').textContent = `✏️ Edit ${workoutSchedule[dayOfWeek]?.name || 'Workout'}`;
+            document.getElementById('workoutEditorTitle').textContent = `✏️ Edit ${workout?.name || 'Workout'}`;
 
             // Load exercises from database
             try {
