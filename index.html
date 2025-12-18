@@ -1620,6 +1620,8 @@
         ];
 
         let savedMealCombos = JSON.parse(localStorage.getItem('fitlife_meal_combos')) || [...defaultMealCombos];
+        let hiddenDefaultCombos = []; // IDs of hidden default combos
+        let categoryDefaults = {}; // { breakfast: comboId, lunch: comboId, ... }
 
         let goals = { calories: 1450, protein: 105, carbs: 140, fat: 50, fiber: 28, targetWeight: 65 };
         let dailyTotals = { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 };
@@ -3601,8 +3603,10 @@
 
             container.innerHTML = filteredCombos.map(combo => {
                 const macros = getComboMacros(combo);
+                const isDefault = categoryDefaults[combo.category] === combo.id;
                 return `
-                <button onclick="showComboPreview(${parseInt(combo.id)})" class="p-3 bg-gradient-to-br ${getComboBg(combo)} border rounded-xl transition-all text-left hover:shadow-md">
+                <button onclick="showComboPreview(${parseInt(combo.id)})" class="p-3 bg-gradient-to-br ${getComboBg(combo)} border ${isDefault ? 'border-emerald-400 ring-2 ring-emerald-200' : ''} rounded-xl transition-all text-left hover:shadow-md relative">
+                    ${isDefault ? '<span class="absolute -top-1 -right-1 text-sm">⭐</span>' : ''}
                     <div class="flex items-start gap-2">
                         <span class="text-xl">${escapeHtml(combo.emoji)}</span>
                         <div class="flex-1 min-w-0">
@@ -3637,6 +3641,9 @@
             // Switch to search tab to show the preview
             switchFoodModalTab('search');
 
+            // Check if this combo is the default for its category
+            const isCurrentDefault = categoryDefaults[combo.category] === combo.id;
+
             // Create preview modal content
             const itemsList = combo.items.map(item =>
                 `<div class="flex justify-between text-sm py-1">
@@ -3652,6 +3659,7 @@
                     <span class="text-4xl mb-2 block">${combo.emoji}</span>
                     <h3 class="font-semibold text-lg text-slate-800">${combo.name}</h3>
                     <p class="text-sm text-slate-500">Add all ${combo.items.length} items to your meal</p>
+                    ${isCurrentDefault ? '<span class="inline-block mt-1 text-xs px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full">⭐ Default for ' + combo.category + '</span>' : ''}
                 </div>
 
                 <div class="bg-slate-50 rounded-xl p-3 mb-4">
@@ -3670,8 +3678,11 @@
                     <button onclick="switchFoodModalTab('combos')" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-medium transition-all text-sm">
                         ← Back
                     </button>
+                    <button onclick="setAsDefaultCombo(${combo.id}, '${combo.category}')" class="py-2.5 px-3 ${isCurrentDefault ? 'bg-emerald-100 text-emerald-700' : 'bg-purple-100 hover:bg-purple-200 text-purple-700'} rounded-xl font-medium transition-all text-sm edit-only" ${isCurrentDefault ? 'disabled' : ''}>
+                        ${isCurrentDefault ? '⭐ Default' : '⭐ Set Default'}
+                    </button>
                     <button onclick="editCombo(${combo.id})" class="py-2.5 px-4 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-xl font-medium transition-all text-sm edit-only">
-                        ✏️ Edit
+                        ✏️
                     </button>
                     <button onclick="deleteCombo(${combo.id})" class="py-2.5 px-4 bg-red-100 hover:bg-red-200 text-red-600 rounded-xl font-medium transition-all text-sm edit-only">
                         🗑️
@@ -4616,11 +4627,24 @@
             const combo = savedMealCombos.find(c => c.id === comboId);
             if (!combo) return;
 
-            if (!confirm(`Delete "${combo.name}" combo?`)) return;
+            // Check if this is a hardcoded default combo (IDs 1-20)
+            const isDefaultCombo = defaultMealCombos.some(dc => dc.id === comboId);
 
-            // DATABASE-FIRST: Delete from server first
-            showApiStatus('saving', 'Deleting combo...');
-            const result = await apiPost('deleteMealCombo', { id: comboId });
+            if (!confirm(`${isDefaultCombo ? 'Hide' : 'Delete'} "${combo.name}" combo?`)) return;
+
+            showApiStatus('saving', isDefaultCombo ? 'Hiding combo...' : 'Deleting combo...');
+
+            let result;
+            if (isDefaultCombo) {
+                // Hide default combo instead of deleting
+                result = await apiPost('hideDefaultCombo', { id: comboId });
+                if (result.success) {
+                    hiddenDefaultCombos.push(comboId);
+                }
+            } else {
+                // Delete custom combo from database
+                result = await apiPost('deleteMealCombo', { id: comboId });
+            }
 
             if (result.success) {
                 // Success - remove from local array
@@ -4632,10 +4656,30 @@
                 // Close preview and re-render
                 switchFoodModalTab('combos');
                 renderQuickCombos();
-                showApiStatus('success', 'Combo deleted!');
+                showApiStatus('success', isDefaultCombo ? 'Combo hidden!' : 'Combo deleted!');
             } else {
                 showApiStatus('error', result.error || 'Failed to delete combo');
                 console.error('Delete Combo API Error:', result);
+            }
+        }
+
+        async function setAsDefaultCombo(comboId, category) {
+            if (!isEditMode) {
+                showToast('Unlock edit mode to set default', 'info');
+                return;
+            }
+
+            showApiStatus('saving', 'Setting as default...');
+            const result = await apiPost('setDefaultCombo', { comboId, category });
+
+            if (result.success) {
+                categoryDefaults[category] = comboId;
+                showComboPreview(comboId); // Refresh the preview to show new status
+                renderQuickCombos(); // Re-render to show default indicator
+                showApiStatus('success', `Set as default for ${category}!`);
+            } else {
+                showApiStatus('error', result.error || 'Failed to set default');
+                console.error('Set Default API Error:', result);
             }
         }
 
@@ -4858,10 +4902,22 @@
         // Load custom combos from database (with localStorage fallback)
         async function loadCustomCombos() {
             try {
-                // Try to load from database first
-                const result = await apiGet('getMealCombos', {});
-                if (result.success && result.combos && result.combos.length > 0) {
-                    const dbCombos = result.combos.filter(c => c.id > 0);
+                // Load hidden combos and category defaults first
+                const [hiddenResult, combosResult] = await Promise.all([
+                    apiGet('getHiddenCombos', {}),
+                    apiGet('getMealCombos', {})
+                ]);
+
+                if (hiddenResult.success) {
+                    hiddenDefaultCombos = hiddenResult.hidden || [];
+                    categoryDefaults = hiddenResult.defaults || {};
+                }
+
+                // Filter out hidden default combos
+                savedMealCombos = savedMealCombos.filter(c => !hiddenDefaultCombos.includes(c.id));
+
+                if (combosResult.success && combosResult.combos && combosResult.combos.length > 0) {
+                    const dbCombos = combosResult.combos.filter(c => c.id > 0);
 
                     // Remove any default combos with same IDs as database combos (prevent collision)
                     const dbComboIds = new Set(dbCombos.map(c => c.id));

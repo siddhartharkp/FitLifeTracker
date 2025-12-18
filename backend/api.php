@@ -194,6 +194,18 @@ switch ($action) {
         deleteMealCombo($input);
         break;
 
+    case 'hideDefaultCombo':
+        hideDefaultCombo($input);
+        break;
+
+    case 'getHiddenCombos':
+        getHiddenCombos();
+        break;
+
+    case 'setDefaultCombo':
+        setDefaultCombo($input);
+        break;
+
     // ==================== EDIT MODE / PASSWORD ====================
     case 'verifyEditPassword':
         verifyEditPassword($input);
@@ -2057,6 +2069,48 @@ function deleteMealCombo($input) {
         logError('deleteMealCombo failed: ' . $e->getMessage(), ['id' => $id]);
         jsonResponse(['success' => false, 'error' => 'Failed to delete combo'], 500);
     }
+}
+
+function hideDefaultCombo($input) {
+    $id = intval($input['id'] ?? 0);
+    if ($id <= 0) {
+        jsonResponse(['success' => false, 'error' => 'Invalid combo ID'], 400);
+        return;
+    }
+
+    // Get current hidden combos
+    $hidden = json_decode(getAppSetting('hidden_default_combos') ?? '[]', true) ?: [];
+
+    if (!in_array($id, $hidden)) {
+        $hidden[] = $id;
+        setAppSetting('hidden_default_combos', json_encode($hidden));
+    }
+
+    jsonResponse(['success' => true, 'hidden' => $hidden]);
+}
+
+function getHiddenCombos() {
+    $hidden = json_decode(getAppSetting('hidden_default_combos') ?? '[]', true) ?: [];
+    $defaults = json_decode(getAppSetting('default_combos') ?? '{}', true) ?: [];
+    jsonResponse(['success' => true, 'hidden' => $hidden, 'defaults' => $defaults]);
+}
+
+function setDefaultCombo($input) {
+    $comboId = intval($input['comboId'] ?? 0);
+    $category = sanitizeString($input['category'] ?? '', 20);
+
+    $validCategories = ['breakfast', 'lunch', 'dinner', 'snacks', 'cheat'];
+    if (!in_array($category, $validCategories)) {
+        jsonResponse(['success' => false, 'error' => 'Invalid category'], 400);
+        return;
+    }
+
+    // Store default combo ID for each category in app_settings
+    $defaults = json_decode(getAppSetting('default_combos') ?? '{}', true) ?: [];
+    $defaults[$category] = $comboId;
+    setAppSetting('default_combos', json_encode($defaults));
+
+    jsonResponse(['success' => true, 'defaults' => $defaults]);
 }
 
 // ==================== EDIT MODE / PASSWORD FUNCTIONS ====================
