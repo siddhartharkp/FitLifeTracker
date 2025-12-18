@@ -47,6 +47,10 @@ switch ($action) {
         clearDay($input['date'] ?? date('Y-m-d'));
         break;
 
+    case 'fixFoodQuantities':
+        fixFoodQuantities();
+        break;
+
     // ==================== FOODS ====================
     case 'getAllFoods':
         getAllFoods();
@@ -621,6 +625,47 @@ function clearDay($date) {
         $db->rollBack();
         logError('clearDay failed: ' . $e->getMessage(), ['date' => $date]);
         jsonResponse(['success' => false, 'error' => 'Failed to clear day'], 500);
+    }
+}
+
+// One-time fix for incorrect food quantities (e.g., rice showing "1 g" instead of "100 g")
+function fixFoodQuantities() {
+    try {
+        $db = getDB();
+
+        // Find rice entries where quantity is low but calories are high (incorrect)
+        // Rice is 130 cal per 100g, so if calories ~130 and quantity < 10, fix to 100
+        $stmt = $db->prepare("
+            SELECT id, food_name, quantity, unit, calories
+            FROM meal_log
+            WHERE LOWER(food_name) LIKE '%rice%'
+            AND unit = 'g'
+            AND quantity < 10
+            AND calories >= 100
+        ");
+        $stmt->execute();
+        $incorrectEntries = $stmt->fetchAll();
+
+        $fixed = [];
+        foreach ($incorrectEntries as $entry) {
+            // Calculate correct quantity based on calories (130 cal per 100g)
+            $correctQuantity = round(($entry['calories'] / 130) * 100);
+
+            $updateStmt = $db->prepare("UPDATE meal_log SET quantity = ? WHERE id = ?");
+            $updateStmt->execute([$correctQuantity, $entry['id']]);
+
+            $fixed[] = [
+                'id' => $entry['id'],
+                'food' => $entry['food_name'],
+                'old' => $entry['quantity'] . ' ' . $entry['unit'],
+                'new' => $correctQuantity . ' ' . $entry['unit']
+            ];
+        }
+
+        jsonResponse(['success' => true, 'fixed' => $fixed, 'count' => count($fixed)]);
+    } catch (PDOException $e) {
+        logError('fixFoodQuantities failed: ' . $e->getMessage());
+        jsonResponse(['success' => false, 'error' => 'Failed to fix quantities'], 500);
     }
 }
 
