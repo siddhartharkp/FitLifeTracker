@@ -3874,12 +3874,15 @@
 
             const quantity = parseFloat(document.getElementById('quantityInput').value) || 1;
 
+            // Calculate actual quantity (servings × serving size)
+            const actualQuantity = quantity * selectedFood.serving;
+
             const mealItem = {
                 date: selectedDate,
                 mealType: currentMealType,
                 foodId: selectedFood.id,
                 foodName: selectedFood.name,
-                quantity: quantity,
+                quantity: actualQuantity,
                 unit: selectedFood.unit,
                 calories: Math.round(selectedFood.calories * quantity),
                 protein: Math.round(selectedFood.protein * quantity * 10) / 10,
@@ -6178,6 +6181,7 @@
                 renderTabContent();
                 loadWater();
                 updateStreakDisplay();
+                updateMotivationBanner(); // Update banner after schedule loads from DB
 
                 // Sync recovery: check for unsynced items and process pending syncs
                 syncUnsyncedItems();
