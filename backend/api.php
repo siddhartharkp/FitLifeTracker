@@ -190,6 +190,10 @@ switch ($action) {
         getMealCombos();
         break;
 
+    case 'deleteMealCombo':
+        deleteMealCombo($input);
+        break;
+
     // ==================== EDIT MODE / PASSWORD ====================
     case 'verifyEditPassword':
         verifyEditPassword($input);
@@ -2029,6 +2033,29 @@ function getMealCombos() {
     } catch (PDOException $e) {
         logError('getMealCombos failed: ' . $e->getMessage());
         jsonResponse(['success' => false, 'error' => 'Failed to load combos'], 500);
+    }
+}
+
+function deleteMealCombo($input) {
+    $id = intval($input['id'] ?? 0);
+    if ($id <= 0) {
+        jsonResponse(['success' => false, 'error' => 'Invalid combo ID'], 400);
+        return;
+    }
+
+    try {
+        $db = getDB();
+        $stmt = $db->prepare("DELETE FROM meal_combos WHERE id = ?");
+        $stmt->execute([$id]);
+
+        if ($stmt->rowCount() > 0) {
+            jsonResponse(['success' => true]);
+        } else {
+            jsonResponse(['success' => false, 'error' => 'Combo not found'], 404);
+        }
+    } catch (PDOException $e) {
+        logError('deleteMealCombo failed: ' . $e->getMessage(), ['id' => $id]);
+        jsonResponse(['success' => false, 'error' => 'Failed to delete combo'], 500);
     }
 }
 
