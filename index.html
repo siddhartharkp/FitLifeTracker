@@ -4861,8 +4861,13 @@
                 // Try to load from database first
                 const result = await apiGet('getMealCombos', {});
                 if (result.success && result.combos && result.combos.length > 0) {
-                    // Filter out default combos (keep only custom ones with id > 1000 or from DB)
                     const dbCombos = result.combos.filter(c => c.id > 0);
+
+                    // Remove any default combos with same IDs as database combos (prevent collision)
+                    const dbComboIds = new Set(dbCombos.map(c => c.id));
+                    savedMealCombos = savedMealCombos.filter(c => !dbComboIds.has(c.id));
+
+                    // Now append database combos
                     savedMealCombos.push(...dbCombos);
                     // Cache to localStorage for offline use
                     localStorage.setItem('fitlife_custom_combos', JSON.stringify(dbCombos));
@@ -4874,6 +4879,9 @@
 
             // Fallback to localStorage if database unavailable
             const customCombos = JSON.parse(localStorage.getItem('fitlife_custom_combos')) || [];
+            // Also remove collisions for offline fallback
+            const customIds = new Set(customCombos.map(c => c.id));
+            savedMealCombos = savedMealCombos.filter(c => !customIds.has(c.id));
             savedMealCombos.push(...customCombos);
         }
 
