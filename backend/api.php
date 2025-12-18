@@ -327,7 +327,7 @@ function analyzeNutrition($input) {
         'generationConfig' => ['responseMimeType' => 'application/json']
     ]);
 
-    $apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' . GEMINI_API_KEY;
+    $apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' . GEMINI_API_KEY;
 
     // Make request to Gemini API
     $ch = curl_init($apiUrl);
