@@ -336,6 +336,11 @@
             <div class="grid grid-cols-7 gap-2" id="dayNav">
                 <!-- Populated dynamically -->
             </div>
+
+            <!-- Swap Mode Banner -->
+            <div id="swapModeBanner" class="hidden mt-2 px-3 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm text-center font-medium">
+                <!-- Populated dynamically -->
+            </div>
         </div>
 
         <!-- Water Tracker - With Wave Animation -->
@@ -477,8 +482,8 @@
             </div>
 
             <div class="p-4 border-t border-slate-100 bg-slate-50 rounded-b-3xl">
-                <button onclick="openCustomFoodModal()" class="w-full py-3 bg-white border-2 border-dashed border-slate-300 text-slate-600 rounded-xl font-semibold hover:border-blue-400 hover:text-blue-600 transition-all">
-                    + Add Custom Food
+                <button onclick="openAiLookupModal()" class="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-emerald-500/30 transition-all flex items-center justify-center gap-2">
+                    <span>🤖</span> AI Meal Lookup
                 </button>
             </div>
         </div>
@@ -519,62 +524,112 @@
         </div>
     </div>
 
-    <!-- Custom Food Modal -->
-    <div id="customFoodModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl max-h-[90vh] overflow-y-auto">
-            <h3 class="font-display text-xl font-semibold text-slate-800 mb-4">➕ Add Custom Food</h3>
-
-            <div class="space-y-3">
-                <div>
-                    <label class="block text-sm text-slate-500 mb-1">Food Name *</label>
-                    <input type="text" id="customName" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., Homemade Khichdi">
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-sm text-slate-500 mb-1">Calories *</label>
-                        <input type="number" id="customCalories" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="150">
+    <!-- AI Nutrition Lookup Modal -->
+    <div id="aiLookupModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+            <!-- Header -->
+            <div class="p-6 border-b border-slate-100 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-t-3xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="h-10 w-10 bg-white/20 rounded-xl flex items-center justify-center">
+                            <span class="text-xl">🤖</span>
+                        </div>
+                        <div>
+                            <h3 class="font-display text-lg font-semibold text-white">AI Meal Analyzer</h3>
+                            <p class="text-emerald-100 text-xs">Indian Cuisine Specialist</p>
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-sm text-slate-500 mb-1">Protein (g)</label>
-                        <input type="number" id="customProtein" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="8">
-                    </div>
-                </div>
-                <div class="grid grid-cols-3 gap-3">
-                    <div>
-                        <label class="block text-sm text-slate-500 mb-1">Carbs (g)</label>
-                        <input type="number" id="customCarbs" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="20">
-                    </div>
-                    <div>
-                        <label class="block text-sm text-slate-500 mb-1">Fat (g)</label>
-                        <input type="number" id="customFat" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="5">
-                    </div>
-                    <div>
-                        <label class="block text-sm text-slate-500 mb-1">Fiber (g)</label>
-                        <input type="number" id="customFiber" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="3">
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-sm text-slate-500 mb-1">Serving Size</label>
-                        <input type="number" id="customServing" value="1" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm text-slate-500 mb-1">Unit</label>
-                        <select id="customUnit" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="serving">serving</option>
-                            <option value="pc">pc</option>
-                            <option value="g">g</option>
-                            <option value="ml">ml</option>
-                            <option value="katori">katori</option>
-                            <option value="tbsp">tbsp</option>
-                        </select>
-                    </div>
+                    <button onclick="closeAiLookupModal()" class="p-2 hover:bg-white/20 rounded-lg transition-all">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
                 </div>
             </div>
 
-            <div class="flex gap-3 mt-6">
-                <button onclick="closeCustomFoodModal()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-semibold transition-all">Cancel</button>
-                <button onclick="saveCustomFood()" class="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/30">Save & Add</button>
+            <!-- Search Input -->
+            <div class="p-4">
+                <form onsubmit="analyzeWithAI(event)" class="relative">
+                    <input
+                        type="text"
+                        id="aiMealQuery"
+                        placeholder="e.g., 2 Roti, Dal Tadka and Rice"
+                        class="w-full px-4 py-3 pl-12 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50 font-medium text-slate-800 placeholder:text-slate-400"
+                    >
+                    <svg class="absolute left-4 top-3.5 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <button
+                        type="submit"
+                        id="aiSearchBtn"
+                        class="absolute right-2 top-2 h-9 w-9 bg-slate-900 rounded-xl flex items-center justify-center text-white hover:bg-emerald-600 disabled:bg-slate-200 disabled:cursor-not-allowed transition-all"
+                    >
+                        <svg id="aiSearchIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        <svg id="aiLoadingIcon" class="w-5 h-5 animate-spin hidden" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Error Display -->
+            <div id="aiErrorDisplay" class="hidden mx-4 mb-4 bg-rose-50 border border-rose-100 p-3 rounded-xl flex items-start gap-3 text-rose-600">
+                <svg class="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <p id="aiErrorText" class="text-sm font-medium"></p>
+            </div>
+
+            <!-- Result Display -->
+            <div id="aiResultDisplay" class="hidden px-4 pb-4 space-y-4">
+                <!-- Dish Name & Calories -->
+                <div class="bg-slate-50 rounded-2xl p-4">
+                    <span class="text-emerald-500 text-[10px] font-bold uppercase tracking-widest">Nutrition Summary</span>
+                    <h4 id="aiDishName" class="text-xl font-bold text-slate-800 mt-1">--</h4>
+                    <div class="flex flex-wrap items-center gap-3 mt-2">
+                        <div class="flex items-center gap-1.5 bg-slate-900 text-white px-3 py-1 rounded-full text-sm font-bold">
+                            <span class="text-emerald-400">🔥</span>
+                            <span id="aiCalories">0</span> kcal
+                        </div>
+                        <span id="aiServingSize" class="text-slate-400 text-xs font-medium italic">--</span>
+                    </div>
+                </div>
+
+                <!-- Macros Grid -->
+                <div class="grid grid-cols-4 gap-2">
+                    <div class="bg-blue-50 p-3 rounded-xl text-center">
+                        <span class="text-[10px] font-bold text-blue-400 uppercase tracking-wider">Protein</span>
+                        <div class="text-lg font-bold text-blue-600 mt-1"><span id="aiProtein">0</span>g</div>
+                    </div>
+                    <div class="bg-orange-50 p-3 rounded-xl text-center">
+                        <span class="text-[10px] font-bold text-orange-400 uppercase tracking-wider">Carbs</span>
+                        <div class="text-lg font-bold text-orange-600 mt-1"><span id="aiCarbs">0</span>g</div>
+                    </div>
+                    <div class="bg-rose-50 p-3 rounded-xl text-center">
+                        <span class="text-[10px] font-bold text-rose-400 uppercase tracking-wider">Fats</span>
+                        <div class="text-lg font-bold text-rose-600 mt-1"><span id="aiFats">0</span>g</div>
+                    </div>
+                    <div class="bg-emerald-50 p-3 rounded-xl text-center">
+                        <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Fiber</span>
+                        <div class="text-lg font-bold text-emerald-600 mt-1"><span id="aiFiber">0</span>g</div>
+                    </div>
+                </div>
+
+                <!-- Health Note -->
+                <div id="aiHealthNote" class="hidden bg-emerald-50/50 p-4 rounded-xl border border-emerald-100/50 flex gap-3 items-start">
+                    <div class="bg-white p-1.5 rounded-lg shadow-sm text-emerald-500 shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <p id="aiHealthNoteText" class="text-sm text-emerald-800 font-medium"></p>
+                </div>
+
+                <!-- Add to Log Button -->
+                <button onclick="addAiResultToLog()" class="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                    Add to Meal Log
+                </button>
+            </div>
+
+            <!-- Empty State -->
+            <div id="aiEmptyState" class="px-4 pb-6 text-center">
+                <div class="h-20 w-20 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                    <span class="text-4xl opacity-50">🍽️</span>
+                </div>
+                <h4 class="font-bold text-slate-600 mb-1">What did you eat?</h4>
+                <p class="text-slate-400 text-sm">Describe your meal and AI will calculate the nutrition.</p>
+                <p class="text-slate-300 text-xs mt-2">Try: "Rajma Chawal", "2 Parathas with Curd", "Idli Sambar"</p>
             </div>
         </div>
     </div>
@@ -907,6 +962,96 @@
             <div class="flex gap-3">
                 <button onclick="closeWorkoutEditor()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-semibold transition-all">Cancel</button>
                 <button onclick="saveWorkoutChanges()" class="flex-1 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-orange-500/30">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Editor Modal -->
+    <div id="scheduleEditorModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-display text-xl font-semibold text-slate-800">📅 Weekly Schedule</h3>
+                <button onclick="closeScheduleEditor()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <p class="text-sm text-slate-500 mb-4">Assign a workout type to each day of the week.</p>
+
+            <!-- Schedule Grid -->
+            <div id="scheduleEditorGrid" class="space-y-2 mb-4">
+                <!-- Generated by JS -->
+            </div>
+
+            <div class="border-t border-slate-100 pt-4 mt-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="font-semibold text-slate-700 text-sm">Workout Types</h4>
+                    <button onclick="openAddWorkoutTypeModal()" class="text-xs px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg transition-all flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        Add Type
+                    </button>
+                </div>
+                <div id="workoutTypesList" class="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                    <!-- Generated by JS -->
+                </div>
+            </div>
+
+            <div class="flex gap-3 mt-4">
+                <button onclick="closeScheduleEditor()" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-semibold transition-all">Cancel</button>
+                <button onclick="saveScheduleChanges()" class="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/30">Save Schedule</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Workout Type Modal -->
+    <div id="addWorkoutTypeModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
+            <h3 class="font-display text-lg font-semibold text-slate-800 mb-4">➕ New Workout Type</h3>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-sm text-slate-500 mb-1">Name *</label>
+                    <input type="text" id="newTypeNameInput" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., HIIT Training">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm text-slate-500 mb-1">Emoji</label>
+                        <select id="newTypeEmojiSelect" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="💪">💪 Strength</option>
+                            <option value="🏃">🏃 Running</option>
+                            <option value="🚶">🚶 Walking</option>
+                            <option value="🧘">🧘 Yoga</option>
+                            <option value="🔥">🔥 HIIT</option>
+                            <option value="🏋️">🏋️ Weights</option>
+                            <option value="🚴">🚴 Cycling</option>
+                            <option value="🏊">🏊 Swimming</option>
+                            <option value="🥊">🥊 Boxing</option>
+                            <option value="🎯">🎯 Focus</option>
+                            <option value="😴">😴 Rest</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-500 mb-1">Color</label>
+                        <select id="newTypeColorSelect" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="orange">🟠 Orange</option>
+                            <option value="blue">🔵 Blue</option>
+                            <option value="purple">🟣 Purple</option>
+                            <option value="teal">🩵 Teal</option>
+                            <option value="green">🟢 Green</option>
+                            <option value="red">🔴 Red</option>
+                            <option value="gray">⚫ Gray</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="newTypeIsRest" class="w-4 h-4 rounded text-blue-600">
+                    <label for="newTypeIsRest" class="text-sm text-slate-600">This is a rest/recovery day</label>
+                </div>
+            </div>
+
+            <div class="flex gap-3 mt-4">
+                <button onclick="closeAddWorkoutTypeModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-semibold transition-all">Cancel</button>
+                <button onclick="createNewWorkoutType()" class="flex-1 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold transition-all">Create</button>
             </div>
         </div>
     </div>
@@ -1523,20 +1668,355 @@
             return labels[type] || 'Normal';
         }
 
-        // Weekly Workout Schedule - Mon-Fri workouts, Sat-Sun rest
-        // Index 0 = Monday, 6 = Sunday
-        const weeklyWorkoutSchedule = {
-            0: { type: 'push', name: 'Push + Core', emoji: '💪', color: 'orange' },    // Monday
-            1: { type: 'pull', name: 'Pull', emoji: '🏋️', color: 'blue' },             // Tuesday
-            2: { type: 'legs', name: 'Legs', emoji: '🦵', color: 'purple' },           // Wednesday
-            3: { type: 'upper', name: 'Upper Var.', emoji: '🔄', color: 'teal' },      // Thursday
-            4: { type: 'cardio', name: 'Light Cardio', emoji: '🏃', color: 'green' },  // Friday
-            5: { type: 'rest', name: 'Rest', emoji: '😴', color: 'gray' },             // Saturday
-            6: { type: 'rest', name: 'Rest', emoji: '😴', color: 'gray' }              // Sunday
+        // Workout Types - loaded from database (with fallback defaults)
+        let workoutTypes = {
+            'push': { key: 'push', name: 'Push + Core', emoji: '💪', color: 'orange', isRest: false },
+            'pull': { key: 'pull', name: 'Pull', emoji: '🏋️', color: 'blue', isRest: false },
+            'legs': { key: 'legs', name: 'Legs', emoji: '🦵', color: 'purple', isRest: false },
+            'upper': { key: 'upper', name: 'Upper Var.', emoji: '🔄', color: 'teal', isRest: false },
+            'cardio': { key: 'cardio', name: 'Cardio', emoji: '🏃', color: 'green', isRest: false },
+            'light_cardio': { key: 'light_cardio', name: 'Light Cardio', emoji: '🚶', color: 'teal', isRest: false },
+            'rest': { key: 'rest', name: 'Rest', emoji: '😴', color: 'gray', isRest: true }
         };
+
+        // Weekly Schedule - loaded from database (with fallback defaults)
+        // Index 0 = Monday, 6 = Sunday
+        let weeklyWorkoutSchedule = {
+            0: { type: 'push', name: 'Push + Core', emoji: '💪', color: 'orange' },
+            1: { type: 'pull', name: 'Pull', emoji: '🏋️', color: 'blue' },
+            2: { type: 'legs', name: 'Legs', emoji: '🦵', color: 'purple' },
+            3: { type: 'upper', name: 'Upper Var.', emoji: '🔄', color: 'teal' },
+            4: { type: 'cardio', name: 'Cardio', emoji: '🏃', color: 'green' },
+            5: { type: 'light_cardio', name: 'Light Cardio', emoji: '🚶', color: 'teal' },
+            6: { type: 'rest', name: 'Rest', emoji: '😴', color: 'gray' }
+        };
+
+        // Workout overrides for current week (loaded from database)
+        let weeklyWorkoutOverrides = {};
+
+        // Load workout types from database
+        async function loadWorkoutTypes() {
+            try {
+                const result = await apiGet('getWorkoutTypes', {});
+                if (result.success && result.types) {
+                    workoutTypes = result.types;
+                }
+            } catch (error) {
+                console.error('Failed to load workout types:', error);
+            }
+        }
+
+        // Load weekly schedule from database
+        async function loadWeeklySchedule() {
+            try {
+                const result = await apiGet('getWeeklySchedule', {});
+                if (result.success && result.schedule) {
+                    weeklyWorkoutSchedule = {};
+                    for (const [day, data] of Object.entries(result.schedule)) {
+                        weeklyWorkoutSchedule[parseInt(day)] = {
+                            type: data.type,
+                            name: data.name,
+                            emoji: data.emoji,
+                            color: data.color
+                        };
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load weekly schedule:', error);
+            }
+        }
+
+        // Load workout overrides from database
+        async function loadWorkoutOverrides() {
+            try {
+                const result = await apiGet('getWorkoutOverrides', {});
+                if (result.success) {
+                    weeklyWorkoutOverrides = result.overrides || {};
+                }
+            } catch (error) {
+                console.error('Failed to load workout overrides:', error);
+            }
+        }
+
+        // Skip today's workout and shift remaining days
+        async function skipTodayWorkout() {
+            if (!isEditMode) {
+                showToast('Unlock edit mode to skip workout', 'info');
+                return;
+            }
+
+            const workout = getWorkoutForDate(selectedDate);
+            const dateDisplay = new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+
+            if (!confirm(`Skip ${workout.name} on ${dateDisplay}?\n\nThis will:\n• Mark today as Rest\n• Shift remaining workouts forward by 1 day\n• Note: Friday's workout may be pushed to next week`)) {
+                return;
+            }
+
+            showApiStatus('saving', 'Skipping day...');
+            const result = await apiPost('skipDay', { date: selectedDate });
+
+            if (result.success) {
+                weeklyWorkoutOverrides = result.overrides || {};
+                showApiStatus('success', 'Day skipped! Workouts shifted.');
+                renderDayNav();
+                renderTabContent();
+                updateMotivationBanner();
+            } else {
+                showApiStatus('error', result.error || 'Failed to skip day');
+            }
+        }
+
+        // Swap workouts between two dates
+        async function swapWorkouts(date1, date2) {
+            showApiStatus('saving', 'Swapping workouts...');
+
+            const type1 = getWorkoutForDate(date1).type;
+            const type2 = getWorkoutForDate(date2).type;
+
+            const result1 = await apiPost('setWorkoutOverride', { date: date1, workoutType: type2 });
+            const result2 = await apiPost('setWorkoutOverride', { date: date2, workoutType: type1 });
+
+            if (result1.success && result2.success) {
+                weeklyWorkoutOverrides[date1] = type2;
+                weeklyWorkoutOverrides[date2] = type1;
+                showApiStatus('success', 'Workouts swapped!');
+                renderDayNav();
+                renderTabContent();
+                updateMotivationBanner();
+            } else {
+                showApiStatus('error', 'Failed to swap workouts');
+            }
+        }
+
+        // Clear all overrides for current week
+        async function clearWorkoutOverrides() {
+            showApiStatus('saving', 'Resetting schedule...');
+            const result = await apiPost('clearWorkoutOverrides', {});
+
+            if (result.success) {
+                weeklyWorkoutOverrides = {};
+                showApiStatus('success', 'Schedule reset to default!');
+                renderDayNav();
+                renderTabContent();
+                updateMotivationBanner();
+            } else {
+                showApiStatus('error', 'Failed to reset schedule');
+            }
+        }
+
+        // ==================== SCHEDULE EDITOR ====================
+
+        let pendingSchedule = {}; // Temporary schedule changes before save
+
+        function openScheduleEditor() {
+            if (!isEditMode) {
+                showToast('Unlock edit mode first', 'info');
+                return;
+            }
+
+            // Copy current schedule to pending
+            pendingSchedule = {};
+            for (let day = 0; day < 7; day++) {
+                pendingSchedule[day] = weeklyWorkoutSchedule[day]?.type || 'rest';
+            }
+
+            renderScheduleEditorGrid();
+            renderWorkoutTypesList();
+
+            document.getElementById('scheduleEditorModal').classList.remove('hidden');
+            document.getElementById('scheduleEditorModal').classList.add('flex');
+        }
+
+        function closeScheduleEditor() {
+            document.getElementById('scheduleEditorModal').classList.add('hidden');
+            document.getElementById('scheduleEditorModal').classList.remove('flex');
+            pendingSchedule = {};
+        }
+
+        function renderScheduleEditorGrid() {
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            const grid = document.getElementById('scheduleEditorGrid');
+
+            grid.innerHTML = days.map((dayName, index) => {
+                const typeKey = pendingSchedule[index] || 'rest';
+                const wt = workoutTypes[typeKey] || { emoji: '❓', name: typeKey };
+
+                return `
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">${wt.emoji}</span>
+                            <span class="font-medium text-slate-700">${dayName}</span>
+                        </div>
+                        <select onchange="updatePendingSchedule(${index}, this.value)"
+                                class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            ${Object.entries(workoutTypes).map(([key, type]) =>
+                                `<option value="${key}" ${key === typeKey ? 'selected' : ''}>${type.emoji} ${type.name}</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updatePendingSchedule(dayIndex, typeKey) {
+            pendingSchedule[dayIndex] = typeKey;
+            renderScheduleEditorGrid();
+        }
+
+        function renderWorkoutTypesList() {
+            const list = document.getElementById('workoutTypesList');
+
+            list.innerHTML = Object.entries(workoutTypes).map(([key, type]) => `
+                <div class="flex items-center gap-2 p-2 bg-slate-50 rounded-lg text-sm">
+                    <span>${type.emoji}</span>
+                    <span class="text-slate-700 truncate">${type.name}</span>
+                </div>
+            `).join('');
+        }
+
+        async function saveScheduleChanges() {
+            showApiStatus('saving', 'Saving schedule...');
+
+            // Build schedule array
+            const scheduleArray = [];
+            for (let day = 0; day < 7; day++) {
+                scheduleArray.push(pendingSchedule[day] || 'rest');
+            }
+
+            const result = await apiPost('saveFullSchedule', { schedule: scheduleArray });
+
+            if (result.success) {
+                // Reload schedule from database
+                await loadWeeklySchedule();
+                showApiStatus('success', 'Schedule saved!');
+                closeScheduleEditor();
+                renderDayNav();
+                renderTabContent();
+            } else {
+                showApiStatus('error', result.error || 'Failed to save schedule');
+            }
+        }
+
+        // Add Workout Type Modal
+        function openAddWorkoutTypeModal() {
+            document.getElementById('newTypeNameInput').value = '';
+            document.getElementById('newTypeEmojiSelect').value = '💪';
+            document.getElementById('newTypeColorSelect').value = 'blue';
+            document.getElementById('newTypeIsRest').checked = false;
+
+            document.getElementById('addWorkoutTypeModal').classList.remove('hidden');
+            document.getElementById('addWorkoutTypeModal').classList.add('flex');
+        }
+
+        function closeAddWorkoutTypeModal() {
+            document.getElementById('addWorkoutTypeModal').classList.add('hidden');
+            document.getElementById('addWorkoutTypeModal').classList.remove('flex');
+        }
+
+        async function createNewWorkoutType() {
+            const name = document.getElementById('newTypeNameInput').value.trim();
+            const emoji = document.getElementById('newTypeEmojiSelect').value;
+            const color = document.getElementById('newTypeColorSelect').value;
+            const isRest = document.getElementById('newTypeIsRest').checked;
+
+            if (!name) {
+                showToast('Please enter a name', 'error');
+                return;
+            }
+
+            // Generate type key from name
+            const typeKey = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+
+            if (!typeKey) {
+                showToast('Invalid name', 'error');
+                return;
+            }
+
+            showApiStatus('saving', 'Creating workout type...');
+
+            const result = await apiPost('createWorkoutType', {
+                typeKey,
+                name,
+                emoji,
+                color,
+                isRest
+            });
+
+            if (result.success) {
+                // Reload workout types
+                await loadWorkoutTypes();
+                showApiStatus('success', 'Workout type created!');
+                closeAddWorkoutTypeModal();
+                renderScheduleEditorGrid();
+                renderWorkoutTypesList();
+            } else {
+                showApiStatus('error', result.error || 'Failed to create type');
+            }
+        }
+
+        // Swap mode state
+        let swapMode = false;
+        let swapFirstDay = null;
+
+        function startSwapMode() {
+            if (!isEditMode) {
+                showToast('Unlock edit mode to swap workouts', 'info');
+                return;
+            }
+            swapMode = true;
+            swapFirstDay = null;
+            showToast('Tap two days in the week view to swap their workouts', 'info');
+            renderDayNav();
+        }
+
+        function cancelSwapMode() {
+            swapMode = false;
+            swapFirstDay = null;
+            renderDayNav();
+        }
+
+        function selectDayForSwap(dayIndex) {
+            const dateKey = getDateKey(dayIndex);
+
+            if (swapFirstDay === null) {
+                swapFirstDay = dateKey;
+                renderDayNav();
+            } else if (swapFirstDay === dateKey) {
+                // Clicked same day - cancel
+                cancelSwapMode();
+            } else {
+                // Second day selected - show confirmation
+                const workout1 = getWorkoutForDate(swapFirstDay);
+                const workout2 = getWorkoutForDate(dateKey);
+                const date1Display = new Date(swapFirstDay).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                const date2Display = new Date(dateKey).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+                if (confirm(`Swap workouts?\n\n${date1Display}: ${workout1.name} → ${workout2.name}\n${date2Display}: ${workout2.name} → ${workout1.name}\n\nThis will modify your schedule for this week.`)) {
+                    swapWorkouts(swapFirstDay, dateKey);
+                }
+                cancelSwapMode();
+            }
+        }
 
         // Get workout for any date based on day of week
         function getWorkoutForDate(dateStr) {
+            // Check for override first (DATABASE-FIRST)
+            if (weeklyWorkoutOverrides[dateStr]) {
+                const overrideType = weeklyWorkoutOverrides[dateStr];
+                // Look up in workoutTypes first, then fall back to schedule
+                if (workoutTypes[overrideType]) {
+                    const wt = workoutTypes[overrideType];
+                    return { type: overrideType, name: wt.name, emoji: wt.emoji, color: wt.color };
+                }
+                // Fallback: search in schedule
+                for (const workout of Object.values(weeklyWorkoutSchedule)) {
+                    if (workout.type === overrideType) {
+                        return workout;
+                    }
+                }
+            }
+
+            // Default logic - use schedule
             const date = new Date(dateStr + 'T00:00:00');
             const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
             // Convert JS day (0=Sun) to our schedule (0=Mon)
@@ -2228,6 +2708,8 @@
                 const isSelected = index === currentDayIndex;
                 const w = getWorkoutForDate(dateKey);
                 const dayType = dayTypes[dateKey] || 'normal';
+                const hasOverride = weeklyWorkoutOverrides[dateKey] !== undefined;
+                const isSwapSelected = swapMode && swapFirstDay === dateKey;
 
                 const colorClasses = {
                     orange: 'bg-orange-100 text-orange-700 border-orange-200',
@@ -2261,17 +2743,42 @@
                     classes += 'ring-2 ring-amber-400 ring-offset-1 ';
                 }
 
+                // Swap mode visual - highlight first selected day
+                if (isSwapSelected) {
+                    classes += 'ring-2 ring-purple-500 ring-offset-2 ';
+                }
+
                 // Day type indicator
                 const dayTypeIcon = dayType === 'cheat' ? '🍕' : dayType === 'light' ? '🥗' : '';
 
+                // Override indicator (small dot)
+                const overrideIndicator = hasOverride ? '<span class="absolute -top-1 -right-1 w-2 h-2 bg-amber-500 rounded-full"></span>' : '';
+
+                // Click handler - swap mode or normal selection
+                const clickHandler = swapMode ? `selectDayForSwap(${index})` : `selectDay(${index})`;
+
                 return `
-                    <button class="${classes}" onclick="selectDay(${index})">
+                    <button class="${classes} relative" onclick="${clickHandler}">
+                        ${overrideIndicator}
                         <span class="text-xs opacity-70">${day}</span>
                         <span class="text-lg font-bold">${date.getDate()}</span>
                         <span class="text-xs">${dayTypeIcon || w.emoji}</span>
                     </button>
                 `;
             }).join('');
+
+            // Show swap mode banner if active
+            const swapBanner = document.getElementById('swapModeBanner');
+            if (swapBanner) {
+                if (swapMode) {
+                    swapBanner.classList.remove('hidden');
+                    swapBanner.innerHTML = swapFirstDay
+                        ? `<span>Now tap the day to swap with</span> <button onclick="cancelSwapMode()" class="ml-2 text-red-600 underline">Cancel</button>`
+                        : `<span>Tap a day to select for swap</span> <button onclick="cancelSwapMode()" class="ml-2 text-red-600 underline">Cancel</button>`;
+                } else {
+                    swapBanner.classList.add('hidden');
+                }
+            }
         }
 
         // ==================== TAB SWITCHING ====================
@@ -2599,10 +3106,20 @@
                                         <h2 class="font-display text-2xl font-semibold text-slate-800">${workout.emoji} ${workoutData.title}</h2>
                                         <p class="text-slate-500 text-sm mt-1">${workoutData.subtitle}</p>
                                     </div>
-                                    <button onclick="openWorkoutEditor()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-sm font-medium transition-all edit-only flex items-center gap-1">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                                        Edit
-                                    </button>
+                                    <div class="flex items-center gap-2">
+                                        <button onclick="skipTodayWorkout()" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg text-sm font-medium transition-all edit-only flex items-center gap-1" title="Skip today and shift workouts">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+                                            Skip
+                                        </button>
+                                        <button onclick="startSwapMode()" class="px-3 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg text-sm font-medium transition-all edit-only flex items-center gap-1" title="Swap two days' workouts">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                                            Swap
+                                        </button>
+                                        <button onclick="openWorkoutEditor()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-sm font-medium transition-all edit-only flex items-center gap-1">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                            Edit
+                                        </button>
+                                    </div>
                                 </div>
                                 ${workout.type !== 'rest' ? `
                                     <div class="flex items-center gap-4">
@@ -2689,32 +3206,14 @@
                     </div>
 
                     <div class="space-y-5">
-                        <!-- PR Records -->
-                        <div class="bg-gradient-to-br from-orange-500 to-red-500 rounded-3xl p-5 text-white shadow-xl">
-                            <h3 class="font-display text-lg font-semibold mb-4">🏆 Personal Records</h3>
-                            <div class="space-y-3">
-                                ${(() => {
-                                    const challenges = getAllChallengeExercises();
-                                    if (challenges.length === 0) {
-                                        return '<div class="text-center py-4 text-white/80">No challenge exercises yet</div>';
-                                    }
-                                    return challenges.map(ch => {
-                                        const pr = prLog[ch.name];
-                                        return `
-                                            <div class="bg-white/20 rounded-xl p-3">
-                                                <div class="text-sm opacity-80">${ch.name} (${ch.reps})</div>
-                                                <div class="text-xl font-bold">${pr ? (ch.prType === 'time' ? formatTime(pr.value) : pr.value + ' reps') : '—'}</div>
-                                                ${pr ? `<div class="text-xs opacity-70">${pr.date}</div>` : ''}
-                                            </div>
-                                        `;
-                                    }).join('');
-                                })()}
-                            </div>
-                        </div>
-
                         <!-- Weekly Schedule -->
                         <div class="bg-white rounded-2xl p-5 shadow-sm">
-                            <h3 class="font-display text-lg font-semibold text-slate-800 mb-4">📅 This Week</h3>
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-display text-lg font-semibold text-slate-800">📅 This Week</h3>
+                                <button onclick="openScheduleEditor()" class="edit-only text-xs px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-all">
+                                    Customize
+                                </button>
+                            </div>
                             <div class="space-y-2">
                                 ${[0,1,2,3,4,5,6].map(day => {
                                     const weekDate = new Date(currentWeekStart);
@@ -3284,7 +3783,7 @@
             if (foods.length === 0) {
                 container.innerHTML = `
                     <div class="text-center text-slate-400 py-8">
-                        No foods found. Try a different search or add a custom food.
+                        No foods found. Try a different search or use AI Meal Lookup.
                     </div>
                 `;
                 return;
@@ -3854,56 +4353,158 @@
             }
         }
 
-        // ==================== CUSTOM FOOD ====================
-        function openCustomFoodModal() {
+        // ==================== AI NUTRITION LOOKUP ====================
+        let currentAiResult = null;
+        let aiAbortController = null;
+
+        function openAiLookupModal() {
             closeFoodModal();
-            document.getElementById('customFoodModal').classList.remove('hidden');
-            document.getElementById('customFoodModal').classList.add('flex');
+            // Reset state
+            currentAiResult = null;
+            document.getElementById('aiMealQuery').value = '';
+            document.getElementById('aiErrorDisplay').classList.add('hidden');
+            document.getElementById('aiResultDisplay').classList.add('hidden');
+            document.getElementById('aiEmptyState').classList.remove('hidden');
+            document.getElementById('aiSearchIcon').classList.remove('hidden');
+            document.getElementById('aiLoadingIcon').classList.add('hidden');
+
+            document.getElementById('aiLookupModal').classList.remove('hidden');
+            document.getElementById('aiLookupModal').classList.add('flex');
+            document.getElementById('aiMealQuery').focus();
         }
 
-        function closeCustomFoodModal() {
-            document.getElementById('customFoodModal').classList.add('hidden');
-            document.getElementById('customFoodModal').classList.remove('flex');
+        function closeAiLookupModal() {
+            // Abort any in-flight request
+            if (aiAbortController) {
+                aiAbortController.abort();
+                aiAbortController = null;
+            }
+            document.getElementById('aiLookupModal').classList.add('hidden');
+            document.getElementById('aiLookupModal').classList.remove('flex');
         }
 
-        async function saveCustomFood() {
-            const name = document.getElementById('customName').value.trim();
-            const calories = parseFloat(document.getElementById('customCalories').value) || 0;
+        async function analyzeWithAI(e) {
+            e?.preventDefault();
+            const query = document.getElementById('aiMealQuery').value.trim();
+            if (!query) return;
 
-            if (!name || !calories) {
-                showApiStatus('error', 'Please enter at least a name and calories');
-                return;
+            // Abort previous request if any
+            if (aiAbortController) aiAbortController.abort();
+            aiAbortController = new AbortController();
+
+            // Show loading state
+            document.getElementById('aiSearchIcon').classList.add('hidden');
+            document.getElementById('aiLoadingIcon').classList.remove('hidden');
+            document.getElementById('aiSearchBtn').disabled = true;
+            document.getElementById('aiErrorDisplay').classList.add('hidden');
+            document.getElementById('aiResultDisplay').classList.add('hidden');
+            document.getElementById('aiEmptyState').classList.add('hidden');
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'analyzeNutrition',
+                        query: query
+                    }),
+                    signal: aiAbortController.signal
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.data) {
+                    // Store result and display
+                    currentAiResult = data.data;
+                    displayAiResult(data.data);
+                    document.getElementById('aiMealQuery').value = '';
+                } else {
+                    showAiError(data.error || "Couldn't analyze this meal. Try being more specific.");
+                }
+            } catch (err) {
+                if (err.name === 'AbortError') return;
+                showAiError("Couldn't analyze this meal. Try being more specific (e.g., '2 Parathas with Curd').");
+            } finally {
+                // Reset loading state
+                document.getElementById('aiSearchIcon').classList.remove('hidden');
+                document.getElementById('aiLoadingIcon').classList.add('hidden');
+                document.getElementById('aiSearchBtn').disabled = false;
+            }
+        }
+
+        function showAiError(message) {
+            document.getElementById('aiErrorText').textContent = message;
+            document.getElementById('aiErrorDisplay').classList.remove('hidden');
+            document.getElementById('aiEmptyState').classList.remove('hidden');
+            document.getElementById('aiResultDisplay').classList.add('hidden');
+        }
+
+        function displayAiResult(result) {
+            document.getElementById('aiDishName').textContent = result.dish;
+            document.getElementById('aiCalories').textContent = result.calories;
+            document.getElementById('aiServingSize').textContent = `Assumed: ${result.serving_size}`;
+            document.getElementById('aiProtein').textContent = result.protein;
+            document.getElementById('aiCarbs').textContent = result.carbs;
+            document.getElementById('aiFats').textContent = result.fats;
+            document.getElementById('aiFiber').textContent = result.fiber;
+
+            if (result.health_note) {
+                document.getElementById('aiHealthNoteText').textContent = result.health_note;
+                document.getElementById('aiHealthNote').classList.remove('hidden');
+            } else {
+                document.getElementById('aiHealthNote').classList.add('hidden');
             }
 
-            const customFood = {
-                name: name,
-                category: 'Custom',
-                calories: calories,
-                protein: parseFloat(document.getElementById('customProtein').value) || 0,
-                carbs: parseFloat(document.getElementById('customCarbs').value) || 0,
-                fat: parseFloat(document.getElementById('customFat').value) || 0,
-                fiber: parseFloat(document.getElementById('customFiber').value) || 0,
-                serving: parseFloat(document.getElementById('customServing').value) || 1,
-                unit: document.getElementById('customUnit').value
+            document.getElementById('aiEmptyState').classList.add('hidden');
+            document.getElementById('aiResultDisplay').classList.remove('hidden');
+        }
+
+        async function addAiResultToLog() {
+            if (!currentAiResult) return;
+
+            const mealItem = {
+                date: selectedDate,
+                mealType: currentMealType,
+                foodId: 0,
+                foodName: currentAiResult.dish,
+                quantity: 1,
+                unit: 'serving',
+                calories: Math.round(currentAiResult.calories),
+                protein: Math.round(currentAiResult.protein * 10) / 10,
+                carbs: Math.round(currentAiResult.carbs * 10) / 10,
+                fat: Math.round(currentAiResult.fats * 10) / 10,
+                fiber: Math.round(currentAiResult.fiber * 10) / 10
             };
 
             // Close modal and show saving indicator
-            closeCustomFoodModal();
-            showApiStatus('saving', 'Creating custom food...');
+            closeAiLookupModal();
+            showApiStatus('saving', 'Adding to meal log...');
 
-            // DATABASE-FIRST: Save to server first
-            const result = await apiPost('addCustomFood', { food: customFood });
+            try {
+                const result = await apiPost('logMeal', mealItem);
 
-            if (result.success) {
-                // Success - add to local database with server-assigned ID
-                customFood.id = result.id || (foodDatabase.length + 1000);
-                foodDatabase.push(customFood);
-                selectFood(customFood.id);
-                showApiStatus('success', 'Custom food created!');
-            } else {
-                // FAILED - Show clear error
-                showApiStatus('error', result.error || 'Failed to create custom food. Please try again.');
-                console.error('Custom Food API Error:', result);
+                if (result.success) {
+                    // Success - update local state with the database ID
+                    mealItem.id = result.id;
+
+                    if (!dailyMeals[currentMealType]) dailyMeals[currentMealType] = [];
+                    dailyMeals[currentMealType].push(mealItem);
+                    dailyTotals.calories += mealItem.calories;
+                    dailyTotals.protein += mealItem.protein;
+                    dailyTotals.carbs += mealItem.carbs;
+                    dailyTotals.fat += mealItem.fat;
+                    dailyTotals.fiber += mealItem.fiber;
+
+                    // Update UI
+                    updateMacroDisplay();
+                    if (currentTab === 'meals') renderTabContent();
+                    showApiStatus('success', `Added ${mealItem.foodName}!`);
+                } else {
+                    showApiStatus('error', result.error || 'Failed to log meal. Please try again.');
+                }
+            } catch (error) {
+                console.error('Meal log error:', error);
+                showApiStatus('error', 'Failed to add - check connection');
             }
         }
 
@@ -5300,46 +5901,56 @@
                 (currentPrExercise.type === 'time' && value < existing.value) ||
                 (currentPrExercise.type === 'reps' && value > existing.value);
 
+            // Store exercise info before closing modal
+            const exerciseName = currentPrExercise.name;
+            const exerciseType = currentPrExercise.type;
+            const forceUpdate = currentPrExercise.forceUpdate;
+
             // Close modal and show saving indicator
             closePrModal();
             showApiStatus('saving', 'Saving PR...');
 
-            // DATABASE-FIRST: Save to server first
-            const result = await apiPost('logPR', {
-                exerciseName: currentPrExercise.name,
-                value: value,
-                prType: currentPrExercise.type,
-                achievedDate: achievedDate
-            });
+            try {
+                // DATABASE-FIRST: Save to server first
+                const result = await apiPost('logPR', {
+                    exerciseName: exerciseName,
+                    value: value,
+                    prType: exerciseType,
+                    achievedDate: achievedDate
+                });
 
-            if (result.success) {
-                // Success - update local state
-                const todayKey = `${selectedDate}-${currentPrExercise.name}`;
-                dailyPrAttempts[todayKey] = {
-                    value,
-                    type: currentPrExercise.type
-                };
-
-                if (isBetter || currentPrExercise.forceUpdate) {
-                    prLog[currentPrExercise.name] = {
+                if (result.success) {
+                    // Success - update local state
+                    const todayKey = `${selectedDate}-${exerciseName}`;
+                    dailyPrAttempts[todayKey] = {
                         value,
-                        date: achievedDate,
-                        type: currentPrExercise.type
+                        type: exerciseType
                     };
 
-                    // Celebrate new PR!
-                    if (isBetter && typeof confetti !== 'undefined') {
-                        confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
-                    }
-                    showApiStatus('success', 'New PR! 🎉');
-                } else {
-                    showApiStatus('success', 'Time logged!');
-                }
+                    if (isBetter || forceUpdate) {
+                        prLog[exerciseName] = {
+                            value,
+                            date: achievedDate,
+                            type: exerciseType
+                        };
 
-                renderTabContent();
-            } else {
-                showApiStatus('error', result.error || 'Failed to save PR');
-                console.error('PR API Error:', result);
+                        // Celebrate new PR!
+                        if (isBetter && typeof confetti !== 'undefined') {
+                            confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+                        }
+                        showApiStatus('success', 'New PR! 🎉');
+                    } else {
+                        showApiStatus('success', 'Time logged!');
+                    }
+
+                    renderTabContent();
+                } else {
+                    showApiStatus('error', result.error || 'Failed to save PR');
+                    console.error('PR API Error:', result);
+                }
+            } catch (error) {
+                console.error('PR save error:', error);
+                showApiStatus('error', 'Failed to save - check connection');
             }
         }
 
@@ -5494,7 +6105,10 @@
                 loadExerciseData(),
                 loadPRData(),
                 loadDayTypes(),
-                loadWorkoutData()
+                loadWorkoutData(),
+                loadWorkoutTypes(),
+                loadWeeklySchedule(),
+                loadWorkoutOverrides()
             ]).then(() => {
                 renderDayNav();
                 renderTabContent();

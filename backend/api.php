@@ -5,6 +5,7 @@
  */
 
 require_once 'config.php';
+require_once 'ai-nutrition.php';
 
 // Get the action from request
 $action = $_GET['action'] ?? $_POST['action'] ?? null;
@@ -120,6 +121,52 @@ switch ($action) {
         getDayTypes();
         break;
 
+    // ==================== WORKOUT OVERRIDES ====================
+    case 'getWorkoutOverrides':
+        getWorkoutOverrides();
+        break;
+
+    case 'setWorkoutOverride':
+        setWorkoutOverride($input);
+        break;
+
+    case 'clearWorkoutOverrides':
+        clearWorkoutOverrides();
+        break;
+
+    case 'skipDay':
+        skipDay($input);
+        break;
+
+    // ==================== FLEXIBLE SCHEDULE ====================
+    case 'getWorkoutTypes':
+        getWorkoutTypes();
+        break;
+
+    case 'createWorkoutType':
+        createWorkoutType($input);
+        break;
+
+    case 'updateWorkoutType':
+        updateWorkoutType($input);
+        break;
+
+    case 'deleteWorkoutType':
+        deleteWorkoutType($input);
+        break;
+
+    case 'getWeeklySchedule':
+        getWeeklySchedule();
+        break;
+
+    case 'updateDaySchedule':
+        updateDaySchedule($input);
+        break;
+
+    case 'saveFullSchedule':
+        saveFullSchedule($input);
+        break;
+
     // ==================== WATER ====================
     case 'logWater':
         logWater($input);
@@ -200,6 +247,11 @@ switch ($action) {
 
     case 'addToExerciseLibrary':
         addToExerciseLibrary($input);
+        break;
+
+    // ==================== AI NUTRITION LOOKUP ====================
+    case 'analyzeNutrition':
+        analyzeNutrition($input);
         break;
 
     default:
@@ -1057,6 +1109,579 @@ function getDayTypes() {
     } catch (PDOException $e) {
         logError('getDayTypes failed: ' . $e->getMessage());
         jsonResponse(['success' => false, 'error' => 'Failed to load day types'], 500);
+    }
+}
+
+// ==================== WORKOUT OVERRIDE FUNCTIONS ====================
+
+function ensureWorkoutOverridesTable() {
+    $db = getDB();
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS workout_overrides (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            date DATE NOT NULL UNIQUE,
+            workout_type VARCHAR(50) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_date (date)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+}
+
+function getWorkoutOverrides() {
+    try {
+        $db = getDB();
+        ensureWorkoutOverridesTable();
+
+        // Get Monday of current week
+        $monday = date('Y-m-d', strtotime('monday this week'));
+        $sunday = date('Y-m-d', strtotime('sunday this week'));
+
+        // Clean up old overrides (before this week)
+        $db->exec("DELETE FROM workout_overrides WHERE date < '$monday'");
+
+        // Get current week's overrides
+        $stmt = $db->prepare("SELECT date, workout_type FROM workout_overrides WHERE date >= ? AND date <= ?");
+        $stmt->execute([$monday, $sunday]);
+        $rows = $stmt->fetchAll();
+
+        $overrides = [];
+        foreach ($rows as $row) {
+            $overrides[$row['date']] = $row['workout_type'];
+        }
+
+        jsonResponse(['success' => true, 'overrides' => $overrides]);
+    } catch (PDOException $e) {
+        logError('getWorkoutOverrides failed: ' . $e->getMessage());
+        jsonResponse(['success' => false, 'error' => 'Failed to load workout overrides'], 500);
+    }
+}
+
+function setWorkoutOverride($data) {
+    if (!validateDate($data['date'] ?? '')) {
+        jsonResponse(['success' => false, 'error' => 'Invalid date'], 400);
+        return;
+    }
+
+    $workoutType = sanitizeString($data['workoutType'] ?? '', 50);
+    if (empty($workoutType)) {
+        jsonResponse(['success' => false, 'error' => 'Workout type is required'], 400);
+        return;
+    }
+
+    try {
+        $db = getDB();
+        ensureWorkoutOverridesTable();
+
+        $stmt = $db->prepare("
+            INSERT INTO workout_overrides (date, workout_type)
+            VALUES (?, ?)
+            ON DUPLICATE KEY UPDATE workout_type = VALUES(workout_type)
+        ");
+        $stmt->execute([$data['date'], $workoutType]);
+
+        jsonResponse(['success' => true]);
+    } catch (PDOException $e) {
+        logError('setWorkoutOverride failed: ' . $e->getMessage(), ['data' => $data]);
+        jsonResponse(['success' => false, 'error' => 'Failed to set workout override'], 500);
+    }
+}
+
+function clearWorkoutOverrides() {
+    try {
+        $db = getDB();
+        ensureWorkoutOverridesTable();
+
+        // Get Monday and Sunday of current week
+        $monday = date('Y-m-d', strtotime('monday this week'));
+        $sunday = date('Y-m-d', strtotime('sunday this week'));
+
+        $stmt = $db->prepare("DELETE FROM workout_overrides WHERE date >= ? AND date <= ?");
+        $stmt->execute([$monday, $sunday]);
+
+        jsonResponse(['success' => true]);
+    } catch (PDOException $e) {
+        logError('clearWorkoutOverrides failed: ' . $e->getMessage());
+        jsonResponse(['success' => false, 'error' => 'Failed to clear workout overrides'], 500);
+    }
+}
+
+function skipDay($data) {
+    if (!validateDate($data['date'] ?? '')) {
+        jsonResponse(['success' => false, 'error' => 'Invalid date'], 400);
+        return;
+    }
+
+    $skipDate = $data['date'];
+    $skipDateObj = new DateTime($skipDate);
+    $dayOfWeek = (int)$skipDateObj->format('N'); // 1=Mon, 7=Sun
+
+    // Don't allow skip on Saturday(6) or Sunday(7)
+    if ($dayOfWeek >= 6) {
+        jsonResponse(['success' => false, 'error' => 'Cannot skip on rest days'], 400);
+        return;
+    }
+
+    try {
+        $db = getDB();
+        ensureWorkoutOverridesTable();
+
+        // Get Monday and Friday of current week
+        $monday = date('Y-m-d', strtotime('monday this week'));
+        $friday = date('Y-m-d', strtotime('friday this week'));
+
+        // Default workout schedule (1=Mon to 7=Sun, PHP date('N') format)
+        $defaultSchedule = [
+            1 => 'push',        // Monday
+            2 => 'pull',        // Tuesday
+            3 => 'legs',        // Wednesday
+            4 => 'upper',       // Thursday
+            5 => 'cardio',      // Friday
+            6 => 'light_cardio', // Saturday
+            7 => 'rest'         // Sunday
+        ];
+
+        // Get existing overrides for this week
+        $stmt = $db->prepare("SELECT date, workout_type FROM workout_overrides WHERE date >= ? AND date <= ?");
+        $stmt->execute([$monday, $friday]);
+        $existingOverrides = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $existingOverrides[$row['date']] = $row['workout_type'];
+        }
+
+        // Build array of dates from skip date to Friday
+        $datesToShift = [];
+        $currentDate = clone $skipDateObj;
+        $fridayObj = new DateTime($friday);
+
+        while ($currentDate <= $fridayObj) {
+            $datesToShift[] = $currentDate->format('Y-m-d');
+            $currentDate->modify('+1 day');
+        }
+
+        // Get current workout types for these dates (considering existing overrides)
+        $currentTypes = [];
+        foreach ($datesToShift as $dateStr) {
+            if (isset($existingOverrides[$dateStr])) {
+                $currentTypes[] = $existingOverrides[$dateStr];
+            } else {
+                $dateObj = new DateTime($dateStr);
+                $dow = (int)$dateObj->format('N');
+                $currentTypes[] = $defaultSchedule[$dow];
+            }
+        }
+
+        // Shift: insert 'rest' at beginning, shift everything forward (last one drops off)
+        $newTypes = array_merge(['rest'], array_slice($currentTypes, 0, -1));
+
+        // Apply new overrides in transaction
+        $db->beginTransaction();
+
+        $stmt = $db->prepare("
+            INSERT INTO workout_overrides (date, workout_type)
+            VALUES (?, ?)
+            ON DUPLICATE KEY UPDATE workout_type = VALUES(workout_type)
+        ");
+
+        foreach ($datesToShift as $index => $dateStr) {
+            $stmt->execute([$dateStr, $newTypes[$index]]);
+        }
+
+        $db->commit();
+
+        // Return updated overrides
+        $stmt = $db->prepare("SELECT date, workout_type FROM workout_overrides WHERE date >= ? AND date <= ?");
+        $stmt->execute([$monday, date('Y-m-d', strtotime('sunday this week'))]);
+
+        $overrides = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $overrides[$row['date']] = $row['workout_type'];
+        }
+
+        jsonResponse(['success' => true, 'overrides' => $overrides]);
+    } catch (PDOException $e) {
+        if (isset($db) && $db->inTransaction()) {
+            $db->rollBack();
+        }
+        logError('skipDay failed: ' . $e->getMessage(), ['data' => $data]);
+        jsonResponse(['success' => false, 'error' => 'Failed to skip day'], 500);
+    }
+}
+
+// ==================== FLEXIBLE SCHEDULE FUNCTIONS ====================
+
+function ensureFlexibleScheduleTables() {
+    $db = getDB();
+
+    // Create workout_types table
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS workout_types (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            type_key VARCHAR(50) NOT NULL UNIQUE,
+            name VARCHAR(100) NOT NULL,
+            emoji VARCHAR(10) DEFAULT '💪',
+            color VARCHAR(20) DEFAULT 'blue',
+            description TEXT,
+            is_rest BOOLEAN DEFAULT FALSE,
+            sort_order INT DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+
+    // Create weekly_schedule table
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS weekly_schedule (
+            day_of_week INT PRIMARY KEY,
+            workout_type_key VARCHAR(50) NOT NULL,
+            INDEX idx_type_key (workout_type_key)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ");
+
+    // Check if workout_types is empty and seed initial data
+    $count = $db->query("SELECT COUNT(*) FROM workout_types")->fetchColumn();
+    if ($count == 0) {
+        seedInitialScheduleData($db);
+    }
+}
+
+function seedInitialScheduleData($db) {
+    // Insert default workout types
+    $workoutTypes = [
+        ['push', 'Push + Core', '💪', 'orange', 'Chest, shoulders, triceps with core work', 0, 1],
+        ['pull', 'Pull', '🏋️', 'blue', 'Back and biceps focused workout', 0, 2],
+        ['legs', 'Legs', '🦵', 'purple', 'Lower body strength training', 0, 3],
+        ['upper', 'Upper Var.', '🔄', 'teal', 'Upper body variation exercises', 0, 4],
+        ['cardio', 'Cardio', '🏃', 'green', 'Cardiovascular training', 0, 5],
+        ['light_cardio', 'Light Cardio', '🚶', 'teal', 'Light recovery cardio and stretching', 0, 6],
+        ['rest', 'Rest', '😴', 'gray', 'Rest and recovery day', 1, 7]
+    ];
+
+    $stmt = $db->prepare("
+        INSERT INTO workout_types (type_key, name, emoji, color, description, is_rest, sort_order)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ");
+
+    foreach ($workoutTypes as $type) {
+        $stmt->execute($type);
+    }
+
+    // Insert default weekly schedule
+    $schedule = [
+        [0, 'push'],        // Monday
+        [1, 'pull'],        // Tuesday
+        [2, 'legs'],        // Wednesday
+        [3, 'upper'],       // Thursday
+        [4, 'cardio'],      // Friday
+        [5, 'light_cardio'], // Saturday
+        [6, 'rest']         // Sunday
+    ];
+
+    $stmt = $db->prepare("INSERT INTO weekly_schedule (day_of_week, workout_type_key) VALUES (?, ?)");
+    foreach ($schedule as $day) {
+        $stmt->execute($day);
+    }
+}
+
+function getWorkoutTypes() {
+    try {
+        $db = getDB();
+        ensureFlexibleScheduleTables();
+
+        $stmt = $db->query("SELECT * FROM workout_types ORDER BY sort_order, id");
+        $types = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $types[$row['type_key']] = [
+                'id' => (int)$row['id'],
+                'key' => $row['type_key'],
+                'name' => $row['name'],
+                'emoji' => $row['emoji'],
+                'color' => $row['color'],
+                'description' => $row['description'],
+                'isRest' => (bool)$row['is_rest'],
+                'sortOrder' => (int)$row['sort_order']
+            ];
+        }
+
+        jsonResponse(['success' => true, 'types' => $types]);
+    } catch (PDOException $e) {
+        logError('getWorkoutTypes failed: ' . $e->getMessage());
+        jsonResponse(['success' => false, 'error' => 'Failed to get workout types'], 500);
+    }
+}
+
+function createWorkoutType($data) {
+    $typeKey = sanitizeString($data['typeKey'] ?? '', 50);
+    $name = sanitizeString($data['name'] ?? '', 100);
+    $emoji = sanitizeString($data['emoji'] ?? '💪', 10);
+    $color = sanitizeString($data['color'] ?? 'blue', 20);
+    $description = sanitizeString($data['description'] ?? '', 500);
+    $isRest = (bool)($data['isRest'] ?? false);
+
+    if (empty($typeKey) || empty($name)) {
+        jsonResponse(['success' => false, 'error' => 'Type key and name are required'], 400);
+        return;
+    }
+
+    // Validate typeKey format (lowercase, underscores allowed)
+    if (!preg_match('/^[a-z][a-z0-9_]*$/', $typeKey)) {
+        jsonResponse(['success' => false, 'error' => 'Type key must be lowercase letters, numbers, underscores'], 400);
+        return;
+    }
+
+    try {
+        $db = getDB();
+        ensureFlexibleScheduleTables();
+
+        // Get next sort order
+        $maxOrder = $db->query("SELECT MAX(sort_order) FROM workout_types")->fetchColumn();
+        $sortOrder = ($maxOrder ?? 0) + 1;
+
+        $stmt = $db->prepare("
+            INSERT INTO workout_types (type_key, name, emoji, color, description, is_rest, sort_order)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ");
+        $stmt->execute([$typeKey, $name, $emoji, $color, $description, $isRest ? 1 : 0, $sortOrder]);
+
+        $id = $db->lastInsertId();
+
+        jsonResponse([
+            'success' => true,
+            'id' => (int)$id,
+            'typeKey' => $typeKey
+        ]);
+    } catch (PDOException $e) {
+        if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
+            jsonResponse(['success' => false, 'error' => 'Workout type key already exists'], 400);
+        } else {
+            logError('createWorkoutType failed: ' . $e->getMessage(), ['data' => $data]);
+            jsonResponse(['success' => false, 'error' => 'Failed to create workout type'], 500);
+        }
+    }
+}
+
+function updateWorkoutType($data) {
+    $typeKey = sanitizeString($data['typeKey'] ?? '', 50);
+    $name = sanitizeString($data['name'] ?? '', 100);
+    $emoji = sanitizeString($data['emoji'] ?? '', 10);
+    $color = sanitizeString($data['color'] ?? '', 20);
+    $description = sanitizeString($data['description'] ?? '', 500);
+    $isRest = isset($data['isRest']) ? (bool)$data['isRest'] : null;
+
+    if (empty($typeKey)) {
+        jsonResponse(['success' => false, 'error' => 'Type key is required'], 400);
+        return;
+    }
+
+    try {
+        $db = getDB();
+        ensureFlexibleScheduleTables();
+
+        // Build dynamic update query
+        $updates = [];
+        $params = [];
+
+        if (!empty($name)) {
+            $updates[] = "name = ?";
+            $params[] = $name;
+        }
+        if (!empty($emoji)) {
+            $updates[] = "emoji = ?";
+            $params[] = $emoji;
+        }
+        if (!empty($color)) {
+            $updates[] = "color = ?";
+            $params[] = $color;
+        }
+        if ($description !== '') {
+            $updates[] = "description = ?";
+            $params[] = $description;
+        }
+        if ($isRest !== null) {
+            $updates[] = "is_rest = ?";
+            $params[] = $isRest ? 1 : 0;
+        }
+
+        if (empty($updates)) {
+            jsonResponse(['success' => false, 'error' => 'No fields to update'], 400);
+            return;
+        }
+
+        $params[] = $typeKey;
+        $sql = "UPDATE workout_types SET " . implode(", ", $updates) . " WHERE type_key = ?";
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+
+        if ($stmt->rowCount() === 0) {
+            jsonResponse(['success' => false, 'error' => 'Workout type not found'], 404);
+            return;
+        }
+
+        jsonResponse(['success' => true]);
+    } catch (PDOException $e) {
+        logError('updateWorkoutType failed: ' . $e->getMessage(), ['data' => $data]);
+        jsonResponse(['success' => false, 'error' => 'Failed to update workout type'], 500);
+    }
+}
+
+function deleteWorkoutType($data) {
+    $typeKey = sanitizeString($data['typeKey'] ?? '', 50);
+
+    if (empty($typeKey)) {
+        jsonResponse(['success' => false, 'error' => 'Type key is required'], 400);
+        return;
+    }
+
+    // Prevent deleting built-in types
+    $builtIn = ['push', 'pull', 'legs', 'upper', 'cardio', 'light_cardio', 'rest'];
+    if (in_array($typeKey, $builtIn)) {
+        jsonResponse(['success' => false, 'error' => 'Cannot delete built-in workout types'], 400);
+        return;
+    }
+
+    try {
+        $db = getDB();
+        ensureFlexibleScheduleTables();
+
+        // Check if type is in use in schedule
+        $stmt = $db->prepare("SELECT COUNT(*) FROM weekly_schedule WHERE workout_type_key = ?");
+        $stmt->execute([$typeKey]);
+        if ($stmt->fetchColumn() > 0) {
+            jsonResponse(['success' => false, 'error' => 'Cannot delete - type is assigned to a day'], 400);
+            return;
+        }
+
+        // Check if type has exercises
+        $stmt = $db->prepare("SELECT COUNT(*) FROM workout_exercises WHERE workout_type = ?");
+        $stmt->execute([$typeKey]);
+        if ($stmt->fetchColumn() > 0) {
+            jsonResponse(['success' => false, 'error' => 'Cannot delete - type has exercises. Remove exercises first.'], 400);
+            return;
+        }
+
+        $stmt = $db->prepare("DELETE FROM workout_types WHERE type_key = ?");
+        $stmt->execute([$typeKey]);
+
+        if ($stmt->rowCount() === 0) {
+            jsonResponse(['success' => false, 'error' => 'Workout type not found'], 404);
+            return;
+        }
+
+        jsonResponse(['success' => true]);
+    } catch (PDOException $e) {
+        logError('deleteWorkoutType failed: ' . $e->getMessage(), ['data' => $data]);
+        jsonResponse(['success' => false, 'error' => 'Failed to delete workout type'], 500);
+    }
+}
+
+function getWeeklySchedule() {
+    try {
+        $db = getDB();
+        ensureFlexibleScheduleTables();
+
+        // Get schedule with workout type details
+        $stmt = $db->query("
+            SELECT ws.day_of_week, ws.workout_type_key,
+                   wt.name, wt.emoji, wt.color, wt.is_rest
+            FROM weekly_schedule ws
+            LEFT JOIN workout_types wt ON ws.workout_type_key = wt.type_key
+            ORDER BY ws.day_of_week
+        ");
+
+        $schedule = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $schedule[(int)$row['day_of_week']] = [
+                'type' => $row['workout_type_key'],
+                'name' => $row['name'] ?? $row['workout_type_key'],
+                'emoji' => $row['emoji'] ?? '💪',
+                'color' => $row['color'] ?? 'gray',
+                'isRest' => (bool)($row['is_rest'] ?? false)
+            ];
+        }
+
+        jsonResponse(['success' => true, 'schedule' => $schedule]);
+    } catch (PDOException $e) {
+        logError('getWeeklySchedule failed: ' . $e->getMessage());
+        jsonResponse(['success' => false, 'error' => 'Failed to get schedule'], 500);
+    }
+}
+
+function updateDaySchedule($data) {
+    $dayOfWeek = isset($data['dayOfWeek']) ? (int)$data['dayOfWeek'] : -1;
+    $typeKey = sanitizeString($data['typeKey'] ?? '', 50);
+
+    if ($dayOfWeek < 0 || $dayOfWeek > 6) {
+        jsonResponse(['success' => false, 'error' => 'Invalid day of week (0-6)'], 400);
+        return;
+    }
+
+    if (empty($typeKey)) {
+        jsonResponse(['success' => false, 'error' => 'Workout type key is required'], 400);
+        return;
+    }
+
+    try {
+        $db = getDB();
+        ensureFlexibleScheduleTables();
+
+        // Verify type exists
+        $stmt = $db->prepare("SELECT id FROM workout_types WHERE type_key = ?");
+        $stmt->execute([$typeKey]);
+        if (!$stmt->fetch()) {
+            jsonResponse(['success' => false, 'error' => 'Workout type not found'], 404);
+            return;
+        }
+
+        $stmt = $db->prepare("
+            INSERT INTO weekly_schedule (day_of_week, workout_type_key)
+            VALUES (?, ?)
+            ON DUPLICATE KEY UPDATE workout_type_key = VALUES(workout_type_key)
+        ");
+        $stmt->execute([$dayOfWeek, $typeKey]);
+
+        jsonResponse(['success' => true]);
+    } catch (PDOException $e) {
+        logError('updateDaySchedule failed: ' . $e->getMessage(), ['data' => $data]);
+        jsonResponse(['success' => false, 'error' => 'Failed to update schedule'], 500);
+    }
+}
+
+function saveFullSchedule($data) {
+    $schedule = $data['schedule'] ?? [];
+
+    if (!is_array($schedule) || count($schedule) !== 7) {
+        jsonResponse(['success' => false, 'error' => 'Schedule must have exactly 7 days'], 400);
+        return;
+    }
+
+    try {
+        $db = getDB();
+        ensureFlexibleScheduleTables();
+
+        $db->beginTransaction();
+
+        $stmt = $db->prepare("
+            INSERT INTO weekly_schedule (day_of_week, workout_type_key)
+            VALUES (?, ?)
+            ON DUPLICATE KEY UPDATE workout_type_key = VALUES(workout_type_key)
+        ");
+
+        for ($day = 0; $day < 7; $day++) {
+            $typeKey = sanitizeString($schedule[$day] ?? '', 50);
+            if (empty($typeKey)) {
+                $db->rollBack();
+                jsonResponse(['success' => false, 'error' => "Invalid type for day $day"], 400);
+                return;
+            }
+            $stmt->execute([$day, $typeKey]);
+        }
+
+        $db->commit();
+        jsonResponse(['success' => true]);
+    } catch (PDOException $e) {
+        if (isset($db) && $db->inTransaction()) {
+            $db->rollBack();
+        }
+        logError('saveFullSchedule failed: ' . $e->getMessage(), ['data' => $data]);
+        jsonResponse(['success' => false, 'error' => 'Failed to save schedule'], 500);
     }
 }
 
