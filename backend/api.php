@@ -269,6 +269,10 @@ switch ($action) {
         break;
 
     // ==================== AI NUTRITION LOOKUP ====================
+    case 'parseMealComponents':
+        parseMealComponents($input);
+        break;
+
     case 'analyzeNutrition':
         analyzeNutrition($input);
         break;
@@ -302,98 +306,229 @@ function healthCheck() {
 
 // ==================== AI NUTRITION LOOKUP ====================
 
-function analyzeNutrition($input) {
-    // Validate API key is configured
-    if (!defined('GEMINI_API_KEY') || empty(GEMINI_API_KEY)) {
-        jsonResponse(['success' => false, 'error' => 'AI service not configured'], 503);
-        return;
-    }
-
-    // Validate input
-    $query = trim($input['query'] ?? '');
-    if (empty($query) || strlen($query) > 500) {
-        jsonResponse(['success' => false, 'error' => 'Invalid query'], 400);
-        return;
-    }
-
-    // Rate limit AI requests more strictly (10 per minute per IP)
-    $client_ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-    checkRateLimit('ai_' . $client_ip, 10, 60);
-
-    $systemPrompt = "You are an expert nutritionist specializing in global cuisines, with a deep focus on Indian meals (thalis, combos, street food).
-    Analyze the user's dish or meal combination.
-    You MUST respond ONLY with a valid JSON object.
-
-    SPECIAL INSTRUCTIONS FOR INDIAN MEALS:
-    - Account for 'Tadka' (tempering) which adds significant fat.
-    - If a meal is mentioned (e.g., 'Dal Chawal'), provide a combined total but mention the assumed portions in 'serving_size'.
-    - Account for hidden sugars in chutneys and gravies.
-
-    Format:
-    {
-      \"dish\": \"Dish Name\",
-      \"calories\": 0,
-      \"protein\": 0,
-      \"carbs\": 0,
-      \"fats\": 0,
-      \"fiber\": 0,
-      \"serving_size\": \"e.g. 2 Rotis + 1 bowl Dal\",
-      \"health_note\": \"A very brief 1-sentence health insight.\"
-    }";
-
-    $requestBody = json_encode([
-        'contents' => [['parts' => [['text' => $query]]]],
-        'systemInstruction' => ['parts' => [['text' => $systemPrompt]]],
-        'generationConfig' => ['responseMimeType' => 'application/json']
-    ]);
-
+/**
+ * Helper function to make Gemini API requests
+ */
+function callGeminiAPI($requestBody, $useWebGrounding = false) {
+    // Use Gemini 2.5 Flash (free tier with web grounding support)
     $apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' . GEMINI_API_KEY;
 
-    // Make request to Gemini API
     $ch = curl_init($apiUrl);
     curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $requestBody);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($requestBody));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 45); // Longer timeout for web grounding
 
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $curlError = curl_error($ch);
     curl_close($ch);
 
-    if ($curlError) {
-        logError('Gemini API curl error: ' . $curlError);
+    return [
+        'response' => $response,
+        'httpCode' => $httpCode,
+        'error' => $curlError
+    ];
+}
+
+/**
+ * Parse a meal description into individual food components
+ * Uses Gemini 3 Flash (no web grounding) to break down meals
+ */
+function parseMealComponents($input) {
+    if (!defined('GEMINI_API_KEY') || empty(GEMINI_API_KEY)) {
+        jsonResponse(['success' => false, 'error' => 'AI service not configured'], 503);
+        return;
+    }
+
+    $query = trim($input['query'] ?? '');
+    if (empty($query) || strlen($query) > 500) {
+        jsonResponse(['success' => false, 'error' => 'Invalid query'], 400);
+        return;
+    }
+
+    $client_ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    checkRateLimit('ai_' . $client_ip, 10, 60);
+
+    $systemPrompt = "You are a meal parser. Break down the user's meal description into individual food components.
+
+For each component, suggest a reasonable quantity and unit based on typical serving sizes.
+
+Available units (use the most appropriate):
+- piece, roti, paratha, chapati, slice (for countable items)
+- bowl, katori, cup, glass, plate (for servings)
+- g, ml (for weight/volume)
+- tbsp, tsp (for small amounts)
+- serving (generic)
+
+IMPORTANT:
+- If user specifies quantities (e.g., '2 rotis'), use those exact quantities
+- For unspecified portions, suggest typical Indian home-cooked meal portions
+- Keep component names simple and recognizable
+
+Respond ONLY with valid JSON:
+{
+  \"components\": [
+    {\"name\": \"Component Name\", \"suggestedQty\": 1, \"suggestedUnit\": \"unit\"}
+  ]
+}";
+
+    $requestBody = [
+        'contents' => [['parts' => [['text' => $query]]]],
+        'systemInstruction' => ['parts' => [['text' => $systemPrompt]]],
+        'generationConfig' => ['responseMimeType' => 'application/json']
+    ];
+
+    $result = callGeminiAPI($requestBody, false);
+
+    if ($result['error']) {
+        logError('Gemini API curl error (parseMealComponents): ' . $result['error']);
         jsonResponse(['success' => false, 'error' => 'AI service unavailable'], 503);
         return;
     }
 
-    if ($httpCode !== 200) {
-        logError('Gemini API error', ['code' => $httpCode, 'response' => $response]);
-        jsonResponse(['success' => false, 'error' => 'AI analysis failed'], 500);
+    if ($result['httpCode'] !== 200) {
+        logError('Gemini API error (parseMealComponents)', ['code' => $result['httpCode'], 'response' => $result['response']]);
+        jsonResponse(['success' => false, 'error' => 'AI parsing failed'], 500);
         return;
     }
 
-    $data = json_decode($response, true);
+    $data = json_decode($result['response'], true);
     $resultText = $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
 
     if (!$resultText) {
-        logError('Gemini API empty response', ['response' => $response]);
-        jsonResponse(['success' => false, 'error' => 'Could not analyze meal'], 500);
+        logError('Gemini API empty response (parseMealComponents)', ['response' => $result['response']]);
+        jsonResponse(['success' => false, 'error' => 'Could not parse meal'], 500);
         return;
     }
 
-    $result = json_decode($resultText, true);
-    if (!$result || !isset($result['dish'])) {
-        logError('Gemini API invalid JSON', ['text' => $resultText]);
+    $parsed = json_decode($resultText, true);
+    if (!$parsed || !isset($parsed['components']) || !is_array($parsed['components'])) {
+        logError('Gemini API invalid JSON (parseMealComponents)', ['text' => $resultText]);
         jsonResponse(['success' => false, 'error' => 'Invalid response from AI'], 500);
         return;
     }
 
     jsonResponse([
         'success' => true,
-        'data' => $result
+        'data' => $parsed
+    ]);
+}
+
+/**
+ * Analyze nutrition using Gemini 3 Flash with web grounding
+ * Uses Google Search to get verified nutrition data
+ */
+function analyzeNutrition($input) {
+    if (!defined('GEMINI_API_KEY') || empty(GEMINI_API_KEY)) {
+        jsonResponse(['success' => false, 'error' => 'AI service not configured'], 503);
+        return;
+    }
+
+    $query = trim($input['query'] ?? '');
+    if (empty($query) || strlen($query) > 500) {
+        jsonResponse(['success' => false, 'error' => 'Invalid query'], 400);
+        return;
+    }
+
+    $client_ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    checkRateLimit('ai_' . $client_ip, 10, 60);
+
+    // Check if portions are provided (new flow) or not (legacy flow)
+    $portions = $input['portions'] ?? null;
+
+    // Build the prompt based on whether portions are provided
+    if ($portions && is_array($portions)) {
+        // New flow: User specified exact portions
+        $portionText = implode(', ', array_map(function($p) {
+            return $p['qty'] . ' ' . $p['unit'] . ' ' . $p['name'];
+        }, $portions));
+
+        $userPrompt = "Get accurate nutrition information for this meal with these exact portions: " . $portionText;
+    } else {
+        // Legacy flow: Just the query
+        $userPrompt = $query;
+    }
+
+    $systemPrompt = "You are an expert nutritionist. Search the web for accurate, verified nutrition information.
+
+IMPORTANT: Use web search to find real nutrition data from reliable sources like USDA, Nutritionix, FatSecret, CalorieKing, or health websites.
+
+For the given meal with specified portions, provide:
+1. Total combined nutrition values
+2. List of sources you found the data from
+
+SPECIAL INSTRUCTIONS FOR INDIAN MEALS:
+- Account for 'Tadka' (tempering) which adds fat from oil/ghee
+- Consider typical preparation methods (fried vs steamed)
+- Account for hidden sugars in chutneys and gravies
+
+Respond ONLY with valid JSON:
+{
+  \"dish\": \"Full meal description\",
+  \"calories\": 0,
+  \"protein\": 0,
+  \"carbs\": 0,
+  \"fats\": 0,
+  \"fiber\": 0,
+  \"serving_size\": \"The portions analyzed\",
+  \"health_note\": \"Brief 1-sentence health insight\",
+  \"sources\": [\"source1.com\", \"source2.com\"]
+}";
+
+    $requestBody = [
+        'contents' => [['parts' => [['text' => $userPrompt]]]],
+        'systemInstruction' => ['parts' => [['text' => $systemPrompt]]],
+        'tools' => [
+            ['googleSearchRetrieval' => new \stdClass()]
+        ],
+        'generationConfig' => ['responseMimeType' => 'application/json']
+    ];
+
+    $result = callGeminiAPI($requestBody, true);
+
+    if ($result['error']) {
+        logError('Gemini API curl error: ' . $result['error']);
+        jsonResponse(['success' => false, 'error' => 'AI service unavailable'], 503);
+        return;
+    }
+
+    if ($result['httpCode'] !== 200) {
+        logError('Gemini API error', ['code' => $result['httpCode'], 'response' => $result['response']]);
+        jsonResponse(['success' => false, 'error' => 'AI analysis failed'], 500);
+        return;
+    }
+
+    $data = json_decode($result['response'], true);
+    $resultText = $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
+
+    // Extract grounding metadata if available
+    $groundingMetadata = $data['candidates'][0]['groundingMetadata'] ?? null;
+    $webSearchSources = [];
+    if ($groundingMetadata && isset($groundingMetadata['webSearchQueries'])) {
+        $webSearchSources = $groundingMetadata['webSearchQueries'];
+    }
+
+    if (!$resultText) {
+        logError('Gemini API empty response', ['response' => $result['response']]);
+        jsonResponse(['success' => false, 'error' => 'Could not analyze meal'], 500);
+        return;
+    }
+
+    $parsed = json_decode($resultText, true);
+    if (!$parsed || !isset($parsed['dish'])) {
+        logError('Gemini API invalid JSON', ['text' => $resultText]);
+        jsonResponse(['success' => false, 'error' => 'Invalid response from AI'], 500);
+        return;
+    }
+
+    // Add web verification flag
+    $parsed['webVerified'] = !empty($parsed['sources']) || !empty($webSearchSources);
+
+    jsonResponse([
+        'success' => true,
+        'data' => $parsed
     ]);
 }
 
@@ -762,6 +897,17 @@ function addCustomFood($food) {
     try {
         $db = getDB();
 
+        // Check if food with same name already exists (case-insensitive)
+        $checkStmt = $db->prepare("SELECT id FROM foods WHERE LOWER(name) = LOWER(?) LIMIT 1");
+        $checkStmt->execute([$name]);
+        $existing = $checkStmt->fetch();
+
+        if ($existing) {
+            // Food already exists, return existing ID
+            jsonResponse(['success' => true, 'id' => $existing['id'], 'exists' => true]);
+            return;
+        }
+
         $stmt = $db->prepare("
             INSERT INTO foods (name, category, calories, protein, carbs, fat, fiber, serving, unit, is_custom)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
@@ -769,7 +915,7 @@ function addCustomFood($food) {
 
         $stmt->execute([
             $name,
-            sanitizeString($food['category'] ?? 'Custom', 50),
+            sanitizeString($food['category'] ?? 'AI Foods', 50),
             floatval($food['calories'] ?? 0),
             floatval($food['protein'] ?? 0),
             floatval($food['carbs'] ?? 0),
@@ -779,7 +925,7 @@ function addCustomFood($food) {
             sanitizeString($food['unit'] ?? 'serving', 50)
         ]);
 
-        jsonResponse(['success' => true, 'id' => $db->lastInsertId()]);
+        jsonResponse(['success' => true, 'id' => $db->lastInsertId(), 'exists' => false]);
     } catch (PDOException $e) {
         logError('addCustomFood failed: ' . $e->getMessage(), ['food' => $food]);
         jsonResponse(['success' => false, 'error' => 'Failed to add food'], 500);

@@ -545,8 +545,8 @@
                 </div>
             </div>
 
-            <!-- Search Input -->
-            <div class="p-4">
+            <!-- Step 1: Search Input -->
+            <div id="aiInputStep" class="p-4">
                 <form onsubmit="analyzeWithAI(event)" class="relative">
                     <input
                         type="text"
@@ -566,6 +566,30 @@
                 </form>
             </div>
 
+            <!-- Step 2: Portion Selection (hidden initially) -->
+            <div id="aiPortionStep" class="hidden p-4">
+                <div class="mb-4">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="h-6 w-6 bg-emerald-500 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                        <h4 class="font-semibold text-slate-800">Confirm Your Portions</h4>
+                    </div>
+                    <p class="text-slate-400 text-xs ml-8">Adjust quantities as needed before analysis</p>
+                </div>
+                <div id="aiComponentsList" class="space-y-2 mb-4 max-h-60 overflow-y-auto">
+                    <!-- Components populated via safe DOM methods -->
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="goBackToInput()" class="flex-1 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-medium hover:bg-slate-200 transition-all flex items-center justify-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                        Back
+                    </button>
+                    <button onclick="confirmPortions()" id="aiConfirmPortionsBtn" class="flex-[2] py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-1">
+                        Get Nutrition
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    </button>
+                </div>
+            </div>
+
             <!-- Error Display -->
             <div id="aiErrorDisplay" class="hidden mx-4 mb-4 bg-rose-50 border border-rose-100 p-3 rounded-xl flex items-start gap-3 text-rose-600">
                 <svg class="w-5 h-5 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -574,6 +598,13 @@
 
             <!-- Result Display -->
             <div id="aiResultDisplay" class="hidden px-4 pb-4 space-y-4">
+                <!-- Web Verified Badge -->
+                <div id="aiVerificationBadge" class="hidden flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2">
+                    <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span class="text-emerald-700 text-sm font-medium">Web Verified</span>
+                    <span id="aiSourcesList" class="text-emerald-600 text-xs ml-auto truncate max-w-[150px]"></span>
+                </div>
+
                 <!-- Dish Name & Calories -->
                 <div class="bg-slate-50 rounded-2xl p-4">
                     <span class="text-emerald-500 text-[10px] font-bold uppercase tracking-widest">Nutrition Summary</span>
@@ -613,6 +644,34 @@
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     </div>
                     <p id="aiHealthNoteText" class="text-sm text-emerald-800 font-medium"></p>
+                </div>
+
+                <!-- Quantity & Unit Selector -->
+                <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                    <label class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 block">Quantity & Serving</label>
+                    <div class="flex gap-2">
+                        <div class="flex-1">
+                            <input type="number" id="aiQuantity" value="1" min="0.1" max="100" step="0.1"
+                                class="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-center font-semibold text-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                onchange="updateAiQuantityDisplay()" oninput="updateAiQuantityDisplay()">
+                        </div>
+                        <div class="flex-[2]">
+                            <select id="aiUnit" class="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                                onchange="updateAiQuantityDisplay()">
+                                <option value="serving">serving</option>
+                                <option value="piece">piece</option>
+                                <option value="bowl">bowl</option>
+                                <option value="cup">cup</option>
+                                <option value="plate">plate</option>
+                                <option value="katori">katori</option>
+                                <option value="roti">roti</option>
+                                <option value="slice">slice</option>
+                                <option value="g">grams (g)</option>
+                                <option value="ml">ml</option>
+                            </select>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-2 text-center">Adjust quantity to scale nutrition values</p>
                 </div>
 
                 <!-- Add to Log Button -->
@@ -773,8 +832,19 @@
                     </div>
                     <div>
                         <label class="block text-sm text-slate-500 mb-1">Unit</label>
-                        <input type="text" id="editMealUnit"
+                        <select id="editMealUnit"
                                class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-center focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="serving">serving</option>
+                            <option value="piece">piece</option>
+                            <option value="bowl">bowl</option>
+                            <option value="cup">cup</option>
+                            <option value="plate">plate</option>
+                            <option value="katori">katori</option>
+                            <option value="roti">roti</option>
+                            <option value="slice">slice</option>
+                            <option value="g">g</option>
+                            <option value="ml">ml</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -4370,17 +4440,24 @@
         // ==================== AI NUTRITION LOOKUP ====================
         let currentAiResult = null;
         let aiAbortController = null;
+        let parsedComponents = [];
+        const UNIT_OPTIONS = ['serving','piece','bowl','cup','glass','plate','katori','roti','paratha','chapati','slice','tbsp','tsp','g','ml'];
 
         function openAiLookupModal() {
             closeFoodModal();
             // Reset state
             currentAiResult = null;
+            parsedComponents = [];
             document.getElementById('aiMealQuery').value = '';
             document.getElementById('aiErrorDisplay').classList.add('hidden');
             document.getElementById('aiResultDisplay').classList.add('hidden');
             document.getElementById('aiEmptyState').classList.remove('hidden');
             document.getElementById('aiSearchIcon').classList.remove('hidden');
             document.getElementById('aiLoadingIcon').classList.add('hidden');
+            // Reset step visibility
+            document.getElementById('aiInputStep').classList.remove('hidden');
+            document.getElementById('aiPortionStep').classList.add('hidden');
+            document.getElementById('aiVerificationBadge').classList.add('hidden');
 
             document.getElementById('aiLookupModal').classList.remove('hidden');
             document.getElementById('aiLookupModal').classList.add('flex');
@@ -4415,11 +4492,12 @@
             document.getElementById('aiEmptyState').classList.add('hidden');
 
             try {
+                // Step 1: Parse meal into components
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        action: 'analyzeNutrition',
+                        action: 'parseMealComponents',
                         query: query
                     }),
                     signal: aiAbortController.signal
@@ -4427,23 +4505,127 @@
 
                 const data = await response.json();
 
-                if (data.success && data.data) {
-                    // Store result and display
-                    currentAiResult = data.data;
-                    displayAiResult(data.data);
-                    document.getElementById('aiMealQuery').value = '';
+                if (data.success && data.data && data.data.components) {
+                    // Show portion selector
+                    showPortionSelector(data.data.components);
                 } else {
-                    showAiError(data.error || "Couldn't analyze this meal. Try being more specific.");
+                    showAiError(data.error || "Couldn't parse this meal. Try being more specific.");
                 }
             } catch (err) {
                 if (err.name === 'AbortError') return;
-                showAiError("Couldn't analyze this meal. Try being more specific (e.g., '2 Parathas with Curd').");
+                showAiError("Couldn't parse this meal. Try being more specific (e.g., '2 Parathas with Curd').");
             } finally {
                 // Reset loading state
                 document.getElementById('aiSearchIcon').classList.remove('hidden');
                 document.getElementById('aiLoadingIcon').classList.add('hidden');
                 document.getElementById('aiSearchBtn').disabled = false;
             }
+        }
+
+        // Display portion selector using safe DOM methods
+        function showPortionSelector(components) {
+            parsedComponents = components;
+            const container = document.getElementById('aiComponentsList');
+            container.replaceChildren(); // Clear safely
+
+            components.forEach((c, i) => {
+                const row = document.createElement('div');
+                row.className = 'component-row flex items-center gap-2 p-2 bg-slate-50 rounded-lg';
+                row.dataset.index = i;
+
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'component-name flex-1 font-medium text-slate-700 text-sm';
+                nameSpan.textContent = c.name;
+
+                const qtyInput = document.createElement('input');
+                qtyInput.type = 'number';
+                qtyInput.className = 'component-qty w-16 px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-center font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500';
+                qtyInput.value = c.suggestedQty || 1;
+                qtyInput.min = '0.1';
+                qtyInput.step = '0.1';
+
+                const unitSelect = createUnitSelect(c.suggestedUnit || 'serving');
+
+                row.append(nameSpan, qtyInput, unitSelect);
+                container.appendChild(row);
+            });
+
+            // Toggle visibility: hide input, show portion step
+            document.getElementById('aiInputStep').classList.add('hidden');
+            document.getElementById('aiPortionStep').classList.remove('hidden');
+            document.getElementById('aiEmptyState').classList.add('hidden');
+        }
+
+        // Create unit dropdown safely
+        function createUnitSelect(selectedUnit) {
+            const select = document.createElement('select');
+            select.className = 'component-unit px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500';
+            UNIT_OPTIONS.forEach(unit => {
+                const option = document.createElement('option');
+                option.value = unit;
+                option.textContent = unit;
+                if (unit === selectedUnit) option.selected = true;
+                select.appendChild(option);
+            });
+            return select;
+        }
+
+        // Collect user's portion selections
+        function collectPortions() {
+            return Array.from(document.querySelectorAll('.component-row')).map(row => ({
+                name: row.querySelector('.component-name').textContent,
+                qty: parseFloat(row.querySelector('.component-qty').value) || 1,
+                unit: row.querySelector('.component-unit').value
+            }));
+        }
+
+        // Step 2: User confirms portions → Get web-sourced nutrition
+        async function confirmPortions() {
+            const portions = collectPortions();
+            const query = document.getElementById('aiMealQuery').value.trim();
+
+            // Show loading on the button
+            const btn = document.getElementById('aiConfirmPortionsBtn');
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Analyzing...';
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'analyzeNutrition',
+                        query: query,
+                        portions: portions
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.data) {
+                    currentAiResult = data.data;
+                    displayAiResult(data.data);
+                    // Hide portion step, show results
+                    document.getElementById('aiPortionStep').classList.add('hidden');
+                } else {
+                    showAiError(data.error || "Couldn't analyze nutrition. Please try again.");
+                    goBackToInput();
+                }
+            } catch (err) {
+                showAiError("Network error. Please try again.");
+                goBackToInput();
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        // Go back to input step
+        function goBackToInput() {
+            document.getElementById('aiPortionStep').classList.add('hidden');
+            document.getElementById('aiInputStep').classList.remove('hidden');
+            document.getElementById('aiEmptyState').classList.remove('hidden');
         }
 
         function showAiError(message) {
@@ -4453,14 +4635,63 @@
             document.getElementById('aiResultDisplay').classList.add('hidden');
         }
 
+        // Store base nutrition values for scaling
+        let aiBaseNutrition = null;
+
+        // Parse serving size text to extract quantity and unit
+        function parseServingSize(servingText) {
+            if (!servingText) return { quantity: 1, unit: 'serving' };
+
+            const text = servingText.toLowerCase();
+
+            // Unit mappings - order matters (check longer patterns first)
+            const unitPatterns = [
+                { pattern: /(\d+(?:\.\d+)?)\s*(?:-\s*\d+)?\s*pieces?/i, unit: 'piece' },
+                { pattern: /(\d+(?:\.\d+)?)\s*(?:-\s*\d+)?\s*rotis?/i, unit: 'roti' },
+                { pattern: /(\d+(?:\.\d+)?)\s*(?:-\s*\d+)?\s*slices?/i, unit: 'slice' },
+                { pattern: /(\d+(?:\.\d+)?)\s*(?:-\s*\d+)?\s*bowls?/i, unit: 'bowl' },
+                { pattern: /(\d+(?:\.\d+)?)\s*(?:-\s*\d+)?\s*cups?/i, unit: 'cup' },
+                { pattern: /(\d+(?:\.\d+)?)\s*(?:-\s*\d+)?\s*plates?/i, unit: 'plate' },
+                { pattern: /(\d+(?:\.\d+)?)\s*(?:-\s*\d+)?\s*katoris?/i, unit: 'katori' },
+                { pattern: /(\d+(?:\.\d+)?)\s*(?:-\s*\d+)?\s*servings?/i, unit: 'serving' },
+                { pattern: /(\d+(?:\.\d+)?)\s*(?:-\s*\d+)?\s*g(?:rams?)?(?:\s|$|\))/i, unit: 'g' },
+                { pattern: /(\d+(?:\.\d+)?)\s*(?:-\s*\d+)?\s*ml(?:\s|$|\))/i, unit: 'ml' },
+            ];
+
+            for (const { pattern, unit } of unitPatterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    const qty = parseFloat(match[1]) || 1;
+                    return { quantity: qty, unit };
+                }
+            }
+
+            // Default fallback
+            return { quantity: 1, unit: 'serving' };
+        }
+
         function displayAiResult(result) {
+            // Store base values for quantity scaling
+            aiBaseNutrition = {
+                calories: parseFloat(result.calories) || 0,
+                protein: parseFloat(result.protein) || 0,
+                carbs: parseFloat(result.carbs) || 0,
+                fats: parseFloat(result.fats) || 0,
+                fiber: parseFloat(result.fiber) || 0
+            };
+
             document.getElementById('aiDishName').textContent = result.dish;
             document.getElementById('aiCalories').textContent = result.calories;
-            document.getElementById('aiServingSize').textContent = `Assumed: ${result.serving_size}`;
+            document.getElementById('aiServingSize').textContent = result.serving_size || '';
             document.getElementById('aiProtein').textContent = result.protein;
             document.getElementById('aiCarbs').textContent = result.carbs;
             document.getElementById('aiFats').textContent = result.fats;
             document.getElementById('aiFiber').textContent = result.fiber;
+
+            // Parse serving size and set quantity/unit automatically
+            const parsed = parseServingSize(result.serving_size);
+            document.getElementById('aiQuantity').value = parsed.quantity;
+            document.getElementById('aiUnit').value = parsed.unit;
 
             if (result.health_note) {
                 document.getElementById('aiHealthNoteText').textContent = result.health_note;
@@ -4469,32 +4700,92 @@
                 document.getElementById('aiHealthNote').classList.add('hidden');
             }
 
+            // Show web verification badge and sources
+            const badge = document.getElementById('aiVerificationBadge');
+            const sourcesList = document.getElementById('aiSourcesList');
+            if (result.webVerified || (result.sources && result.sources.length > 0)) {
+                badge.classList.remove('hidden');
+                if (result.sources && result.sources.length > 0) {
+                    sourcesList.textContent = result.sources.slice(0, 2).join(', ');
+                } else {
+                    sourcesList.textContent = '';
+                }
+            } else {
+                badge.classList.add('hidden');
+            }
+
             document.getElementById('aiEmptyState').classList.add('hidden');
             document.getElementById('aiResultDisplay').classList.remove('hidden');
         }
 
-        async function addAiResultToLog() {
-            if (!currentAiResult) return;
+        function updateAiQuantityDisplay() {
+            if (!aiBaseNutrition) return;
 
-            const mealItem = {
-                date: selectedDate,
-                mealType: currentMealType,
-                foodId: 0,
-                foodName: currentAiResult.dish,
-                quantity: 1,
-                unit: 'serving',
-                calories: Math.round(currentAiResult.calories),
-                protein: Math.round(currentAiResult.protein * 10) / 10,
-                carbs: Math.round(currentAiResult.carbs * 10) / 10,
-                fat: Math.round(currentAiResult.fats * 10) / 10,
-                fiber: Math.round(currentAiResult.fiber * 10) / 10
+            const quantity = parseFloat(document.getElementById('aiQuantity').value) || 1;
+
+            // Scale all nutrition values by quantity
+            const scaled = {
+                calories: Math.round(aiBaseNutrition.calories * quantity),
+                protein: Math.round(aiBaseNutrition.protein * quantity * 10) / 10,
+                carbs: Math.round(aiBaseNutrition.carbs * quantity * 10) / 10,
+                fats: Math.round(aiBaseNutrition.fats * quantity * 10) / 10,
+                fiber: Math.round(aiBaseNutrition.fiber * quantity * 10) / 10
             };
+
+            // Update display
+            document.getElementById('aiCalories').textContent = scaled.calories;
+            document.getElementById('aiProtein').textContent = scaled.protein;
+            document.getElementById('aiCarbs').textContent = scaled.carbs;
+            document.getElementById('aiFats').textContent = scaled.fats;
+            document.getElementById('aiFiber').textContent = scaled.fiber;
+        }
+
+        async function addAiResultToLog() {
+            if (!currentAiResult || !aiBaseNutrition) return;
+
+            // Get user-selected quantity and unit
+            const quantity = parseFloat(document.getElementById('aiQuantity').value) || 1;
+            const unit = document.getElementById('aiUnit').value;
 
             // Close modal and show saving indicator
             closeAiLookupModal();
-            showApiStatus('saving', 'Adding to meal log...');
+            showApiStatus('saving', 'Saving to food database...');
 
             try {
+                // First, save the food to the foods database (with base nutrition for 1 serving)
+                const foodData = {
+                    name: currentAiResult.dish,
+                    category: 'AI Foods',
+                    calories: aiBaseNutrition.calories,
+                    protein: aiBaseNutrition.protein,
+                    carbs: aiBaseNutrition.carbs,
+                    fat: aiBaseNutrition.fats,
+                    fiber: aiBaseNutrition.fiber,
+                    serving: 1,
+                    unit: 'serving'
+                };
+
+                console.log('Saving food to database:', foodData);
+                const foodResult = await apiPost('addCustomFood', { food: foodData });
+                console.log('Food save result:', foodResult);
+                const foodId = foodResult.success ? foodResult.id : 0;
+
+                // Now log the meal with scaled values
+                const mealItem = {
+                    date: selectedDate,
+                    mealType: currentMealType,
+                    foodId: foodId,
+                    foodName: currentAiResult.dish,
+                    quantity: quantity,
+                    unit: unit,
+                    calories: Math.round(aiBaseNutrition.calories * quantity),
+                    protein: Math.round(aiBaseNutrition.protein * quantity * 10) / 10,
+                    carbs: Math.round(aiBaseNutrition.carbs * quantity * 10) / 10,
+                    fat: Math.round(aiBaseNutrition.fats * quantity * 10) / 10,
+                    fiber: Math.round(aiBaseNutrition.fiber * quantity * 10) / 10
+                };
+
+                showApiStatus('saving', 'Adding to meal log...');
                 const result = await apiPost('logMeal', mealItem);
 
                 if (result.success) {
@@ -4512,7 +4803,13 @@
                     // Update UI
                     updateMacroDisplay();
                     if (currentTab === 'meals') renderTabContent();
-                    showApiStatus('success', `Added ${mealItem.foodName}!`);
+
+                    // Show appropriate success message
+                    if (foodResult.exists) {
+                        showApiStatus('success', `Added ${mealItem.foodName}!`);
+                    } else {
+                        showApiStatus('success', `Added ${mealItem.foodName} (saved to foods)!`);
+                    }
                 } else {
                     showApiStatus('error', result.error || 'Failed to log meal. Please try again.');
                 }
